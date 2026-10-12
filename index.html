@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion des Ordres de Mission — Administration Publique</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--primary:#0b3d91;--primary-dark:#082a66;--primary-light:#e6ecf7;--accent:#d4a017;--success:#1e7e34;--warning:#d39e00;--danger:#c82333;--info:#117a8b;--gray-100:#f8f9fa;--gray-200:#e9ecef;--gray-300:#dee2e6;--gray-600:#6c757d;--gray-800:#343a40;--radius:8px;--shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 12px rgba(0,0,0,.10);--transition:all .2s ease}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,Geneva,sans-serif;background:var(--gray-100);color:var(--gray-800);font-size:14px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+.hidden{display:none!important}
+header.app-header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-md);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:10px}
+.app-header .brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px}
+.app-header .brand .logo{width:40px;height:40px;background:var(--accent);border-radius:50%;display:grid;place-items:center;font-weight:bold;color:var(--primary-dark);flex-shrink:0}
+.app-header .brand small{display:block;font-size:11px;font-weight:400;opacity:.8}
+.app-header nav ul{list-style:none;display:flex;gap:4px;flex-wrap:wrap}
+.app-header nav a{color:rgba(255,255,255,.85);text-decoration:none;padding:8px 14px;border-radius:var(--radius);transition:var(--transition);font-weight:500;font-size:13px;cursor:pointer;display:inline-block}
+.app-header nav a:hover,.app-header nav a.active{background:rgba(255,255,255,.15);color:#fff}
+.user-info{display:flex;align-items:center;gap:12px;font-size:13px}
+.user-info .avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--primary-dark);display:grid;place-items:center;font-weight:bold;flex-shrink:0}
+.user-info .info-name{font-weight:500;line-height:1.2}
+.user-info .info-role{font-size:11px;opacity:.8}
+.scope-banner{background:#fff;border:1px solid var(--gray-300);border-left:4px solid var(--info);padding:10px 16px;border-radius:var(--radius);margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.scope-banner.scope-global{border-left-color:var(--info);background:#e7f3ff;color:#004085}
+.scope-banner.scope-direction{border-left-color:var(--warning);background:#fff3cd;color:#856404}
+.scope-banner.scope-self{border-left-color:var(--success);background:#d4edda;color:#155724}
+.scope-banner strong{font-weight:600}
+.scope-banner .scope-icon{font-size:16px}
+.login-wrapper{flex:1;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#0b3d91,#082a66);min-height:100vh}
+.login-card{background:#fff;padding:40px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:440px}
+.login-card h1{color:var(--primary);font-size:22px;margin-bottom:8px;text-align:center}
+.login-card>p{color:var(--gray-600);text-align:center;margin-bottom:24px;font-size:13px}
+.login-card .logo-big{width:70px;height:70px;background:var(--accent);border-radius:50%;display:grid;place-items:center;margin:0 auto 20px;font-size:28px;font-weight:bold;color:var(--primary-dark)}
+.login-card .form-group{margin-bottom:16px}
+.login-card .btn{width:100%;justify-content:center;padding:12px;font-size:14px}
+main.container{flex:1;max-width:1500px;width:100%;margin:0 auto;padding:24px}
+.page-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.page-title h1{font-size:24px;color:var(--primary-dark);font-weight:500}
+.page-title .subtitle{color:var(--gray-600);font-size:13px;margin-top:4px}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:20px;margin-bottom:20px;transition:var(--transition)}
+.card:hover{box-shadow:var(--shadow-md)}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--gray-200);flex-wrap:wrap;gap:10px}
+.card-header h2{font-size:16px;font-weight:600;color:var(--primary-dark)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.kpi{background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-sm);border-left:4px solid var(--primary);transition:var(--transition)}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kpi.kpi-warning{border-left-color:var(--warning)}
+.kpi.kpi-success{border-left-color:var(--success)}
+.kpi.kpi-danger{border-left-color:var(--danger)}
+.kpi.kpi-info{border-left-color:var(--info)}
+.kpi-label{color:var(--gray-600);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px}
+.kpi-value{font-size:28px;font-weight:700;color:var(--primary-dark)}
+.kpi-sub{font-size:12px;color:var(--gray-600);margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:none;border-radius:var(--radius);background:var(--primary);color:#fff;font-size:13px;font-weight:500;cursor:pointer;transition:var(--transition);text-decoration:none;font-family:inherit;white-space:nowrap}
+.btn:hover{background:var(--primary-dark);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--gray-600)}.btn-secondary:hover{background:var(--gray-800)}
+.btn-success{background:var(--success)}.btn-success:hover{background:#155724}
+.btn-danger{background:var(--danger)}.btn-danger:hover{background:#a71d2a}
+.btn-warning{background:var(--warning);color:#fff}.btn-warning:hover{background:#b08800}
+.btn-info{background:var(--info);color:#fff}.btn-info:hover{background:#0d6470}
+.btn-outline{background:transparent;border:1px solid var(--primary);color:var(--primary)}.btn-outline:hover{background:var(--primary);color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px}
+.om-icon-btn{width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;letter-spacing:.5px;border-radius:50%;background:linear-gradient(135deg,#0b3d91,#082a66);color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(11,61,145,.35);transition:all .2s ease;font-family:'Segoe UI',Tahoma,sans-serif;cursor:pointer}
+.om-icon-btn:hover{transform:scale(1.12);box-shadow:0 3px 10px rgba(11,61,145,.5)}
+.om-icon-btn::before{content:"OM"}
+.vh-icon-btn{width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;letter-spacing:.5px;border-radius:50%;background:linear-gradient(135deg,#117a8b,#0d6470);color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(17,122,139,.35);transition:all .2s ease;font-family:'Segoe UI',Tahoma,sans-serif;cursor:pointer}
+.vh-icon-btn:hover{transform:scale(1.12);box-shadow:0 3px 10px rgba(17,122,139,.5)}
+.vh-icon-btn::before{content:"VH"}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full-width{grid-column:1/-1}
+.form-group label{font-weight:500;color:var(--gray-800);font-size:13px}
+.form-group label .required{color:var(--danger)}
+.form-control{padding:9px 12px;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:13px;font-family:inherit;transition:var(--transition);background:#fff;width:100%}
+.form-control:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(11,61,145,.12)}
+.form-control[readonly]{background:var(--gray-100);cursor:not-allowed}
+textarea.form-control{resize:vertical;min-height:80px}
+select.form-control{cursor:pointer}
+.combo-hint{font-size:11px;color:var(--gray-600);margin-top:-2px}
+select.form-control.select-scroll{height:auto;max-height:220px;overflow-y:auto;padding:4px}
+select.form-control.select-scroll option{padding:6px 10px;border-radius:4px;margin-bottom:2px}
+select.form-control.select-scroll option:checked{background:var(--primary-light);color:var(--primary-dark);font-weight:600}
+.dv-dest-row{display:flex;gap:6px;margin-bottom:6px;align-items:stretch}
+.dv-dest-row .dv-dest-input{flex:1}
+.dv-pers-row{display:flex;gap:6px;margin-bottom:6px;align-items:stretch}
+.dv-pers-row .dv-pers-input{flex:1}
+.table-wrapper{overflow-x:auto;border-radius:var(--radius);background:#fff}
+table.data-table{width:100%;border-collapse:collapse;font-size:13px}
+table.data-table thead{background:var(--primary-light)}
+table.data-table th{text-align:left;padding:12px;font-weight:600;color:var(--primary-dark);border-bottom:2px solid var(--gray-300);white-space:nowrap;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+table.data-table td{padding:11px 12px;border-bottom:1px solid var(--gray-200);vertical-align:middle}
+table.data-table tbody tr:hover{background:var(--gray-100)}
+table.data-table tbody tr:last-child td{border-bottom:none}
+.actions-cell{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.badge-BROUILLON{background:#e2e3e5;color:#41464b}
+.badge-SOUMIS{background:#fff3cd;color:#856404}
+.badge-VALIDE_N1,.badge-VALIDE_N2{background:#d1ecf1;color:#0c5460}
+.badge-VALIDE{background:#d4edda;color:#155724}
+.badge-REJETE{background:#f8d7da;color:#721c24}
+.badge-EN_COURS{background:#cce5ff;color:#004085}
+.badge-CLOTURE{background:#d6d8db;color:#1b1e21}
+.badge-ANNULE{background:#e2e3e5;color:#41464b}
+.badge-TRANSMIS_SSPA{background:#d1ecf1;color:#0c5460}
+.badge-OM_ETABLI{background:#d4edda;color:#155724}
+.badge-AFFECTE{background:#cce5ff;color:#004085}
+.badge-TERMINE{background:#d4edda;color:#155724}
+.badge-REFUSE{background:#f8d7da;color:#721c24}
+.badge-DISPONIBLE{background:#d4edda;color:#155724}
+.badge-MAINTENANCE{background:#fff3cd;color:#856404}
+.badge-HORS_SERVICE{background:#f8d7da;color:#721c24}
+.permissions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;background:var(--gray-100);padding:12px;border-radius:var(--radius);border-left:3px solid var(--info);max-height:280px;overflow-y:auto}
+.permission-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border-radius:6px;border:1px solid var(--gray-200);cursor:pointer;transition:var(--transition);font-size:12px;font-weight:500}
+.permission-item:hover{background:var(--primary-light);border-color:var(--primary)}
+.permission-item input[type=checkbox]{cursor:pointer;width:16px;height:16px;accent-color:var(--primary)}
+.permission-item.checked{background:var(--primary-light);border-color:var(--primary);color:var(--primary-dark)}
+.role-color-dot{display:inline-block;width:14px;height:14px;border-radius:50%;margin-inline-end:6px;vertical-align:middle;border:2px solid #fff;box-shadow:0 0 0 1px var(--gray-300)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-md);max-width:800px;width:100%;max-height:95vh;overflow-y:auto;animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+.modal.modal-wide{max-width:1400px}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:3}
+.modal-header h3{font-size:16px;color:var(--primary-dark)}
+.modal-close{background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--gray-600);padding:0 6px;line-height:1}
+.modal-body{padding:20px;overflow:visible}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--gray-200);display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#fff;flex-wrap:wrap;z-index:3}
+.alert{padding:12px 16px;border-radius:var(--radius);margin-bottom:16px;font-size:13px;border-left:4px solid}
+.alert-info{background:#e7f3ff;border-color:var(--info);color:#004085}
+.alert-success{background:#d4edda;border-color:var(--success);color:#155724}
+.alert-warning{background:#fff3cd;border-color:var(--warning);color:#856404}
+.alert-danger{background:#f8d7da;border-color:var(--danger);color:#721c24}
+#toast-container{position:fixed;top:80px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:10px;max-width:340px}
+.toast{background:#fff;border-left:4px solid var(--primary);border-radius:var(--radius);padding:12px 18px;box-shadow:var(--shadow-md);font-size:13px;animation:slideIn .3s ease}
+.toast.success{border-color:var(--success)}
+.toast.error{border-color:var(--danger)}
+.toast.warning{border-color:var(--warning)}
+.toast.info{border-color:var(--info)}
+@keyframes slideIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+.timeline{position:relative;padding-left:30px}
+.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--gray-300)}
+.timeline-item{position:relative;margin-bottom:20px}
+.timeline-item::before{content:'';position:absolute;left:-25px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--primary);border:2px solid #fff;box-shadow:0 0 0 2px var(--primary)}
+.timeline-item.done::before{background:var(--success);box-shadow:0 0 0 2px var(--success)}
+.timeline-item.rejected::before{background:var(--danger);box-shadow:0 0 0 2px var(--danger)}
+.timeline-item.pending::before{background:var(--gray-300);box-shadow:0 0 0 2px var(--gray-300)}
+.timeline-item .tl-title{font-weight:600;color:var(--primary-dark);font-size:13px}
+.timeline-item .tl-meta{font-size:12px;color:var(--gray-600);margin-top:2px}
+.timeline-item .tl-comment{font-size:12px;margin-top:6px;padding:8px;background:var(--gray-100);border-radius:4px;font-style:italic}
+.workflow-viz{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;padding:12px;background:var(--gray-100);border-radius:var(--radius);font-size:11px}
+.workflow-viz .step{display:flex;align-items:center;gap:6px}
+.workflow-viz .step .num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:bold;font-size:11px;flex-shrink:0}
+.workflow-viz .step.done .num{background:var(--success)}
+.workflow-viz .step.rejected .num{background:var(--danger)}
+.workflow-viz .step.current .num{background:var(--warning);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(212,160,23,.7)}50%{box-shadow:0 0 0 6px rgba(212,160,23,0)}}
+.workflow-viz .arrow{color:var(--gray-600);align-self:center}
+footer.app-footer{background:var(--gray-800);color:rgba(255,255,255,.6);padding:14px 24px;text-align:center;font-size:12px}
+.text-center{text-align:center}
+.text-muted{color:var(--gray-600)}
+.mt-2{margin-top:8px}
+.flex-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+@media (max-width:900px){.app-header{flex-direction:column;align-items:flex-start}.page-title{flex-direction:column;align-items:flex-start}}
+.demandeur-cell{display:flex;align-items:center;gap:8px}
+.demandeur-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;display:grid;place-items:center;font-weight:bold;font-size:12px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px}
+.demandeur-info{line-height:1.2}
+.demandeur-nom{font-weight:600;color:var(--primary-dark);font-size:13px}
+.demandeur-meta{font-size:11px;color:var(--gray-600)}
+.demandeur-highlight{background:linear-gradient(135deg,#e6ecf7,#f8f9fa);border-left:4px solid var(--primary);border-radius:var(--radius);padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.demandeur-highlight .dh-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;display:grid;place-items:center;font-weight:bold;font-size:20px;flex-shrink:0}
+.demandeur-highlight .dh-info{flex:1;min-width:200px}
+.demandeur-highlight .dh-name{font-weight:700;font-size:16px;color:var(--primary-dark);margin-bottom:4px}
+.demandeur-highlight .dh-meta{font-size:12px;color:var(--gray-600);line-height:1.6}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast-container"></div>
+<div id="modal-container"></div>
+<script>
+/* =====================================================
+   1. COUCHE API
+   ===================================================== */
+const API = (() => {
+  const cache = {agents: [], directions: [], missions: [], validations: [], workflows: [], statuts: [], transports: [], typesFrais: [], users: [], destinations: [], roles: [], vehicules: [], demandesVehicules: [], statutsVehicule: []};
+  const seq = { mission: 0, validation: 0, agent: 0, direction: 0, destination: 0, user: 0, role: 0, vehicule: 0, demande: 0 };
+  const PAGES_CATALOG = [
+    {id:'dashboard', label:'Tableau de bord'},{id:'vehicules', label:'Demandes véhicules'},{id:'validation', label:'Validations'},
+    {id:'missions', label:'Missions'},{id:'parc_auto', label:'Parc auto'},{id:'agents', label:'Agents'},
+    {id:'directions', label:'Directions'},{id:'destinations', label:'Destinations'},{id:'statistiques', label:'Statistiques'},
+    {id:'comptes', label:'Comptes'},{id:'roles', label:'Rôles'}
+  ];
+  function nextId(entity) { return ++seq[entity]; }
+  async function fetchJson(url, options = {}) { const r = await fetch(url, options); if (!r.ok) throw new Error(`Erreur ${r.status}`); return r.json(); }
+  async function pushCreate(entity, data) { 
+    try { 
+      const r = await fetch(`/api/${entity}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); 
+      if (!r.ok) { const errText = await r.text(); console.error(`❌ POST /api/${entity} (${r.status}) :`, errText); if (window.Utils) Utils.toast(`Erreur serveur (${r.status})`, 'error', 5000); }
+      else { console.log(`✅ POST /api/${entity} OK`, data); }
+    } catch (e) { console.error('Erreur sync create', entity, e); } 
+  }
+  async function pushUpdate(entity, id, data) { 
+    try { const r = await fetch(`/api/${entity}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (!r.ok) console.error(`❌ PUT /api/${entity}/${id} (${r.status})`); } catch (e) { console.error(e); } 
+  }
+  async function pushDelete(entity, id) { try { await fetch(`/api/${entity}/${id}`, { method: 'DELETE' }); } catch (e) { console.error(e); } }
+  async function init() {
+    const [agents, directions, destinations, missions, validations, workflows, statuts, transports, typesFrais, users, roles, vehicules, demandesVehicules, statutsVehicule] = await Promise.all([
+      fetchJson('/api/agents'), fetchJson('/api/directions'), fetchJson('/api/destinations'), fetchJson('/api/missions'),
+      fetchJson('/api/validations'), fetchJson('/api/workflows'), fetchJson('/api/statuts'), fetchJson('/api/transports'),
+      fetchJson('/api/types-frais'), fetchJson('/api/users'), fetchJson('/api/roles'), fetchJson('/api/vehicules'),
+      fetchJson('/api/demandes-vehicules'), fetchJson('/api/statuts-vehicule')
+    ]);
+    cache.agents = agents; cache.directions = directions; cache.destinations = destinations;
+    cache.missions = missions; cache.validations = validations; cache.workflows = workflows;
+    cache.statuts = statuts; cache.transports = transports; cache.typesFrais = typesFrais;
+    cache.users = users; cache.roles = roles; cache.vehicules = vehicules;
+    cache.demandesVehicules = demandesVehicules; cache.statutsVehicule = statutsVehicule;
+    seq.mission = Math.max(0, ...missions.map(m => m.idMission || 0));
+    seq.validation = Math.max(0, ...validations.map(v => v.idValidation || 0));
+    seq.agent = Math.max(0, ...agents.map(a => a.idAgent || 0));
+    seq.direction = Math.max(0, ...directions.map(d => d.idDirection || 0));
+    seq.destination = Math.max(0, ...destinations.map(d => d.idDestination || 0));
+    seq.user = Math.max(0, ...users.map(u => u.idUtilisateur || 0));
+    seq.role = Math.max(0, ...roles.map(r => r.idRole || 0));
+    seq.vehicule = Math.max(0, ...vehicules.map(v => v.idVehicule || 0));
+    seq.demande = Math.max(0, ...demandesVehicules.map(d => d.idDemande || 0));
+    console.log('✅ Données chargées depuis MySQL');
+    console.log('📋 Workflows actifs :', cache.workflows.filter(w => w.actif !== 0).map(w => `id=${w.idWorkflow} code=${w.code}`).join(' | '));
+  }
+  return {
+    PAGES_CATALOG, init,
+    getRoles: () => cache.roles, getRole: (id) => cache.roles.find(r => r.idRole === id), getRoleByCode: (code) => cache.roles.find(r => r.code === code),
+    createRole(role) { role.idRole = nextId('role'); role.isSystem = false; role.actif = role.actif !== false; role.pages = role.pages || []; cache.roles.push(role); pushCreate('roles', role); return role; },
+    updateRole(id, data) { const i = cache.roles.findIndex(r => r.idRole === id); if (i < 0) throw new Error('Introuvable'); cache.roles[i] = { ...cache.roles[i], ...data }; pushUpdate('roles', id, cache.roles[i]); return cache.roles[i]; },
+    deleteRole(id) { const r = cache.roles.find(x => x.idRole === id); if (!r) throw new Error('Introuvable'); if (r.isSystem) throw new Error('Rôle protégé'); cache.roles = cache.roles.filter(x => x.idRole !== id); pushDelete('roles', id); },
+    getVehicules: () => cache.vehicules, getVehicule: (id) => cache.vehicules.find(v => v.idVehicule === id),
+    getVehiculeByImmat: (immat) => cache.vehicules.find(v => (v.immatriculation||'').toUpperCase() === (immat||'').toUpperCase()),
+    getValeursDistinctes(field) { const s = new Set(); cache.vehicules.forEach(v => { if (v[field]) s.add(String(v[field]).trim()); }); return Array.from(s).sort(); },
+    createVehicule(v) { v.idVehicule = nextId('vehicule'); v.actif = v.actif !== false; v.capacite = Number(v.capacite) || 5; v.statut = v.statut || 'DISPONIBLE'; cache.vehicules.push(v); pushCreate('vehicules', v); return v; },
+    updateVehicule(id, data) { const i = cache.vehicules.findIndex(v => v.idVehicule === id); if (i < 0) throw new Error('Introuvable'); cache.vehicules[i] = { ...cache.vehicules[i], ...data }; pushUpdate('vehicules', id, cache.vehicules[i]); return cache.vehicules[i]; },
+    deleteVehicule(id) { cache.vehicules = cache.vehicules.filter(v => v.idVehicule !== id); pushDelete('vehicules', id); },
+    getDemandesVehicules: () => cache.demandesVehicules, getDemandeVehicule: (id) => cache.demandesVehicules.find(d => d.idDemande === id),
+    getStatutsVehicule: () => cache.statutsVehicule, getStatutVehiculeByCode: (code) => cache.statutsVehicule.find(s => s.code === code),
+    getValeursDistinctesDemandesVehicules(field) { const s = new Set(); cache.demandesVehicules.forEach(d => { if (d[field]) s.add(String(d[field]).trim()); }); return Array.from(s).sort(); },
+    createDemandeVehicule(d) { d.idDemande = nextId('demande'); const y = new Date(d.dateCreation || Date.now()).getFullYear(); d.numeroDemande = d.numeroDemande || 'DV/' + y + '/' + String(d.idDemande).padStart(5,'0'); d.statut = d.statut || 'BROUILLON'; d.dateCreation = d.dateCreation || new Date().toISOString(); if (!d.idCreateur && d.idDemandeur) d.idCreateur = d.idDemandeur; if (Array.isArray(d.destinations) && d.destinations.length) d.destination = d.destinations[0]; else if (d.destination) d.destinations = [d.destination]; else d.destinations = []; if (Array.isArray(d.personnesTransportees)) d.nbPassagers = d.personnesTransportees.length; cache.demandesVehicules.push(d); pushCreate('demandes-vehicules', d); return d; },
+    updateDemandeVehicule(id, data) { const i = cache.demandesVehicules.findIndex(d => d.idDemande === id); if (i < 0) throw new Error('Introuvable'); cache.demandesVehicules[i] = { ...cache.demandesVehicules[i], ...data }; const d = cache.demandesVehicules[i]; if (Array.isArray(d.destinations) && d.destinations.length) d.destination = d.destinations[0]; if (Array.isArray(d.personnesTransportees)) d.nbPassagers = d.personnesTransportees.length; pushUpdate('demandes-vehicules', id, d); return d; },
+    deleteDemandeVehicule(id) { cache.demandesVehicules = cache.demandesVehicules.filter(d => d.idDemande !== id); pushDelete('demandes-vehicules', id); },
+    getDirections: () => cache.directions, getDirection: (id) => cache.directions.find(d => d.idDirection === id), getDirectionByCode: (code) => cache.directions.find(d => d.codeDirection === code),
+    createDirection(d) { d.idDirection = nextId('direction'); d.actif = d.actif !== false; cache.directions.push(d); pushCreate('directions', d); return d; },
+    updateDirection(id, data) { const i = cache.directions.findIndex(d => d.idDirection === id); if (i < 0) throw new Error('Introuvable'); cache.directions[i] = { ...cache.directions[i], ...data }; pushUpdate('directions', id, cache.directions[i]); return cache.directions[i]; },
+    deleteDirection(id) { cache.directions = cache.directions.filter(d => d.idDirection !== id); pushDelete('directions', id); },
+    getAgents: () => cache.agents, getAgent: (id) => cache.agents.find(a => a.idAgent === id), getAgentByMatricule: (m) => cache.agents.find(a => a.matricule === m),
+    getValeursDistinctesAgents(field) { const s = new Set(); cache.agents.forEach(a => { if (a[field]) s.add(String(a[field]).trim()); }); return Array.from(s).sort(); },
+    createAgent(a) { a.idAgent = nextId('agent'); a.matricule = a.matricule || 'AG' + String(a.idAgent).padStart(3,'0'); a.actif = true; a.taux = Number(a.taux) || 0; cache.agents.push(a); pushCreate('agents', a); return a; },
+    updateAgent(id, data) { const i = cache.agents.findIndex(a => a.idAgent === id); if (i < 0) throw new Error('Introuvable'); cache.agents[i] = { ...cache.agents[i], ...data }; pushUpdate('agents', id, cache.agents[i]); return cache.agents[i]; },
+    deleteAgent(id) { cache.agents = cache.agents.filter(a => a.idAgent !== id); pushDelete('agents', id); },
+    getStatuts: () => cache.statuts, getStatutByCode: (code) => cache.statuts.find(s => s.code === code), getStatutById: (id) => cache.statuts.find(s => s.idStatut === id),
+    getTransports: () => cache.transports, getTypesFrais: () => cache.typesFrais,
+    getDestinations: () => cache.destinations, getDestination: (id) => cache.destinations.find(d => d.idDestination === id),
+    getDestinationByCode: (code) => cache.destinations.find(d => d.code === code),
+    getDestinationByLibelle: (lib) => cache.destinations.find(d => (d.libelle||'').toLowerCase() === (lib||'').toLowerCase()),
+    createDestination(d) { d.idDestination = nextId('destination'); d.actif = d.actif !== false; cache.destinations.push(d); pushCreate('destinations', d); return d; },
+    updateDestination(id, data) { const i = cache.destinations.findIndex(d => d.idDestination === id); if (i < 0) throw new Error('Introuvable'); cache.destinations[i] = { ...cache.destinations[i], ...data }; pushUpdate('destinations', id, cache.destinations[i]); return cache.destinations[i]; },
+    deleteDestination(id) { cache.destinations = cache.destinations.filter(d => d.idDestination !== id); pushDelete('destinations', id); },
+    getWorkflows: () => cache.workflows, getWorkflow: (id) => cache.workflows.find(w => w.idWorkflow === id), getWorkflowByCode: (code) => cache.workflows.find(w => w.code === code),
+    getMissions: () => cache.missions, getMission: (id) => cache.missions.find(m => m.idMission === id),
+    createMission(m) { m.idMission = nextId('mission'); const y = new Date(m.dateEmission || Date.now()).getFullYear(); m.numeroOm = m.numeroOm || 'OM/' + y + '/' + String(m.idMission).padStart(5,'0'); m.idStatut = m.idStatut || 1; m.frais = m.frais || []; m.itineraires = m.itineraires || []; m.participants = m.participants || []; m.montantTotal = m.frais.reduce((s,f) => s + (f.montantTotal||0), 0); cache.missions.push(m); pushCreate('missions', m); return m; },
+    updateMission(id, data) { const i = cache.missions.findIndex(m => m.idMission === id); if (i < 0) throw new Error('Introuvable'); cache.missions[i] = { ...cache.missions[i], ...data }; const m = cache.missions[i]; m.montantTotal = (m.frais||[]).reduce((s,f) => s + (f.montantTotal||0), 0); pushUpdate('missions', id, m); return m; },
+    changerStatut(id, code) { const s = cache.statuts.find(x => x.code === code); if (!s) throw new Error('Statut inconnu: ' + code); return this.updateMission(id, { idStatut: s.idStatut }); },
+    getValidations: () => cache.validations,
+    getValidationsByMission: (idMission) => cache.validations.filter(v => v.idMission === idMission).sort((a,b) => a.niveau - b.niveau),
+    getValidationsEnAttentePour: (idAgent) => cache.validations.filter(v => v.idValidateur === idAgent && v.decision === 'EN_ATTENTE'),
+    createValidation(v) { v.idValidation = nextId('validation'); v.decision = v.decision || 'EN_ATTENTE'; v.dateCreation = new Date().toISOString(); cache.validations.push(v); pushCreate('validations', v); return v; },
+    updateValidation(id, data) { const i = cache.validations.findIndex(v => v.idValidation === id); if (i < 0) throw new Error('Introuvable'); cache.validations[i] = { ...cache.validations[i], ...data }; pushUpdate('validations', id, cache.validations[i]); return cache.validations[i]; },
+    deleteValidationsByMission(idMission) { cache.validations = cache.validations.filter(v => v.idMission !== idMission); fetch(`/api/validations/mission/${idMission}`, { method: 'DELETE' }); },
+    getUsers: () => cache.users, getUser: (login) => cache.users.find(u => u.login === login),
+    getUserById: (id) => cache.users.find(u => u.idUtilisateur === id),
+    createUser(u) { u.idUtilisateur = nextId('user'); u.actif = u.actif !== false; if (u.idAgent === undefined) u.idAgent = null; cache.users.push(u); pushCreate('users', u); return u; },
+    updateUser(id, data) { const i = cache.users.findIndex(u => u.idUtilisateur === id); if (i < 0) throw new Error('Introuvable'); cache.users[i] = { ...cache.users[i], ...data }; pushUpdate('users', id, cache.users[i]); return cache.users[i]; },
+    deleteUser(id) { const u = cache.users.find(x => x.idUtilisateur === id); if (u && u.login === 'admin') throw new Error('Compte admin protégé'); cache.users = cache.users.filter(x => x.idUtilisateur !== id); pushDelete('users', id); }
+  };
+})();
+
+/* =====================================================
+   2. AUTHENTIFICATION
+   ===================================================== */
+const Auth = (() => {
+  const KEY = 'gm_session';
+  return {
+    login(login, password) {
+      const u = API.getUser(login);
+      if (!u || u.password !== password) throw new Error('Identifiants invalides');
+      if (u.actif === false) throw new Error('Compte désactivé');
+      const s = {login:u.login, role:u.role, idAgent:u.idAgent, idUtilisateur:u.idUtilisateur, dateLogin:new Date().toISOString()};
+      localStorage.setItem(KEY, JSON.stringify(s));
+      try { API.updateUser(u.idUtilisateur, {dateLogin: s.dateLogin}); } catch(e) {}
+      return s;
+    },
+    logout() { localStorage.removeItem(KEY); window.location.reload(); },
+    session() { const s = localStorage.getItem(KEY); if (!s) return null; try { return JSON.parse(s); } catch { return null; } },
+    currentAgent() { const s = this.session(); return s && s.idAgent ? API.getAgent(s.idAgent) : null; }
+  };
+})();
+
+/* =====================================================
+   3. SCOPE
+   ===================================================== */
+const Scope = (() => {
+  const ROLES_GLOBAUX = ['ADMIN','DAF','DAAJ','SSPA'];
+  const ROLES_DIRECTION = ['CHEF_SERVICE','DIRECTEUR','RELAIS'];
+  const DIRECTIONS_GLOBALES = ['DAAJ', 'SSPA', 'DAF'];
+  const isGlobalView = () => ROLES_GLOBAUX.includes(Auth.session()?.role);
+  const isDirectionView = () => ROLES_DIRECTION.includes(Auth.session()?.role);
+  function hasGlobalDirection() { const agent = Auth.currentAgent(); if (!agent) return false; const dir = API.getDirection(agent.idDirection); if (!dir) return false; return DIRECTIONS_GLOBALES.includes(dir.codeDirection); }
+  function myDirectionId() { const a = Auth.currentAgent(); return a ? a.idDirection : null; }
+  function directionTree(idDirection) { if (!idDirection) return []; const ids = [idDirection]; const dirs = API.getDirections(); let added = true; while (added) { added = false; dirs.forEach(d => { if (d.idDirectionParent && ids.includes(d.idDirectionParent) && !ids.includes(d.idDirection)) { ids.push(d.idDirection); added = true; } }); } return ids; }
+  function visibleDirectionIds() { if (isGlobalView() || hasGlobalDirection()) return null; const dirId = myDirectionId(); if (!dirId) return []; if (isDirectionView()) return directionTree(dirId); return [dirId]; }
+  function missions() {
+    const all = API.getMissions();
+    const role = Auth.session()?.role;
+    const agent = Auth.currentAgent();
+    if (isGlobalView() || hasGlobalDirection()) return all;
+    if (role === 'RELAIS') { if (!agent) return []; const dirId = agent.idDirection; return all.filter(m => m.idDirection === dirId || m.idDemandeur === agent.idAgent || (m.participants || []).some(p => p.idAgent === agent.idAgent)); }
+    if (isDirectionView()) { const dirIds = visibleDirectionIds() || []; return all.filter(m => dirIds.includes(m.idDirection)); }
+    if (!agent) return [];
+    return all.filter(m => m.idDemandeur === agent.idAgent || (m.participants || []).some(p => p.idAgent === agent.idAgent));
+  }
+  function demandesVehicules() {
+    const all = API.getDemandesVehicules();
+    const role = Auth.session()?.role;
+    const agent = Auth.currentAgent();
+    if (isGlobalView() || hasGlobalDirection()) return all;
+    if (role === 'RELAIS') { if (!agent) return []; const dirId = agent.idDirection; return all.filter(d => d.idDirection === dirId || d.idDemandeur === agent.idAgent || d.idChauffeur === agent.idAgent); }
+    if (isDirectionView()) { const dirIds = visibleDirectionIds() || []; return all.filter(d => dirIds.includes(d.idDirection)); }
+    if (!agent) return [];
+    return all.filter(d => d.idDemandeur === agent.idAgent || d.idChauffeur === agent.idAgent);
+  }
+  function agents() {
+    const all = API.getAgents();
+    const role = Auth.session()?.role;
+    const agent = Auth.currentAgent();
+    if (isGlobalView() || hasGlobalDirection()) return all;
+    if (role === 'RELAIS') { if (!agent) return []; const dirId = agent.idDirection; return all.filter(a => a.idDirection === dirId); }
+    if (isDirectionView()) { const dirIds = visibleDirectionIds() || []; return all.filter(a => dirIds.includes(a.idDirection)); }
+    if (!agent) return [];
+    return all.filter(a => a.idAgent === agent.idAgent);
+  }
+  function directions() { const all = API.getDirections(); if (isGlobalView() || hasGlobalDirection()) return all; const dirIds = visibleDirectionIds() || []; return all.filter(d => dirIds.includes(d.idDirection)); }
+  function validationsEnAttente() { const a = Auth.currentAgent(); return a ? API.getValidationsEnAttentePour(a.idAgent) : []; }
+  function getStatistiques() { const ms = missions(); const byStatut = {}, byDirection = {}; let totalJours = 0; ms.forEach(m => { const statut = API.getStatutById(m.idStatut)?.code || '?'; byStatut[statut] = (byStatut[statut] || 0) + 1; const dir = API.getDirection(m.idDirection)?.libelle || '?'; byDirection[dir] = (byDirection[dir] || 0) + 1; totalJours += Utils.dureeJours(m.dateDepart, m.dateRetour); }); return {total: ms.length, byStatut, byDirection, totalJours}; }
+  function vehiculesParc() { const all = API.getVehicules().filter(v => v.actif !== false); if (isGlobalView() || hasGlobalDirection()) return all; const dirIds = visibleDirectionIds() || []; return all.filter(v => dirIds.includes(v.idDirection)); }
+  function label() {
+    const r = Auth.session()?.role;
+    if (r === 'ADMIN') return {cls:'scope-global', icon:'🌐', text:'Vue <strong>Administrateur</strong>'};
+    if (r === 'DAF') return {cls:'scope-global', icon:'🌐', text:'Vue <strong>DAF</strong>'};
+    if (r === 'DAAJ') return {cls:'scope-global', icon:'⚖️', text:'Vue <strong>DAAJ</strong>'};
+    if (r === 'SSPA') return {cls:'scope-global', icon:'📋', text:'Vue <strong>SSPA</strong>'};
+    if (r === 'DIRECTEUR') { const d = API.getDirection(myDirectionId()); const dirLbl = d ? `${d.codeDirection} — ${d.libelle}` : '—'; return {cls:'scope-direction', icon:'👔', text:`Vue <strong>Directeur</strong> — ${Utils.esc(dirLbl)}`}; }
+    if (r === 'RELAIS') { const d = API.getDirection(myDirectionId()); const dirLbl = d ? `${d.codeDirection} — ${d.libelle}` : '—'; return {cls:'scope-direction', icon:'📋', text:`Vue <strong>Relais</strong> — ${Utils.esc(dirLbl)}`}; }
+    if (r === 'AGENT') return {cls:'scope-self', icon:'👤', text:'Vue <strong>Agent</strong>'};
+    return {cls:'', icon:'', text:''};
+  }
+  return {isGlobalView, isDirectionView, hasGlobalDirection, myDirectionId, visibleDirectionIds, missions, demandesVehicules, agents, directions, validationsEnAttente, getStatistiques, label, vehiculesParc};
+})();
+
+/* =====================================================
+   4. UTILITAIRES
+   ===================================================== */
+const Utils = {
+  formatDate(d) { if (!d) return '—'; if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) { const [y, m, j] = d.substring(0,10).split('-'); return `${j}/${m}/${y}`; } const dt = new Date(d); if (isNaN(dt)) return d; return dt.toLocaleDateString('fr-FR'); },
+  formatDateTime(d) { if (!d) return '—'; const dt = new Date(d); if (isNaN(dt)) return d; return dt.toLocaleString('fr-FR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}); },
+  toLocalInput(d) { if (!d) return ''; const dt = new Date(d); if (isNaN(dt)) return ''; const pad = (n) => String(n).padStart(2,'0'); return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`; },
+  formatMoney(v) { const n = Number(v || 0); return n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' MAD'; },
+  dureeJours(d1, d2) { if (!d1 || !d2) return 0; const a = new Date(d1), b = new Date(d2); if (isNaN(a) || isNaN(b)) return 0; const diff = b - a; if (diff < 0) return 0; return Math.floor(diff / (1000*60*60*24)) + 1; },
+  esc(s) { if (s == null) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); },
+  destsLabel(d) { if (!d) return '—'; const arr = Array.isArray(d.destinations) && d.destinations.length ? d.destinations : (d.destination ? [d.destination] : []); return arr.length ? arr.join(' → ') : '—'; },
+  personnesList(d) { if (!d) return []; if (Array.isArray(d.personnesTransportees)) return d.personnesTransportees.map(p => String(p || '').trim()).filter(Boolean); return []; },
+  statutCode(m) { return API.getStatutById(m.idStatut)?.code || '?'; },
+  statutLibelle(m) { return API.getStatutById(m.idStatut)?.libelle || '?'; },
+  badgeStatut(m) { return `<span class="badge badge-${this.statutCode(m)}">${this.esc(this.statutLibelle(m))}</span>`; },
+  badgeStatutVehicule(code) { const s = API.getStatutVehiculeByCode(code); return `<span class="badge badge-${code}">${this.esc(s?.libelle || code)}</span>`; },
+  agentNom(id) { const a = API.getAgent(id); return a ? `${a.prenom} ${a.nom}` : '—'; },
+  vehiculeLabel(id) { if (!id) return '—'; const v = API.getVehicule(id); return v ? `${v.immatriculation}` : '—'; },
+  demandeurCell(idAgent) { const a = idAgent ? API.getAgent(idAgent) : null; if (!a) return '<span class="text-muted">—</span>'; const dir = API.getDirection(a.idDirection); const initiales = ((a.prenom||'').charAt(0) + (a.nom||'').charAt(0)).toUpperCase() || '?'; return `<div class="demandeur-cell"><div class="demandeur-avatar">${this.esc(initiales)}</div><div class="demandeur-info"><div class="demandeur-nom">${this.esc(a.prenom + ' ' + a.nom)}</div><div class="demandeur-meta">${a.matricule || ''} ${dir ? ' • ' + dir.codeDirection : ''}</div></div></div>`; },
+  demandeurHighlight(idAgent, titre = 'Demandeur') { const a = idAgent ? API.getAgent(idAgent) : null; if (!a) return ''; const dir = API.getDirection(a.idDirection); const initiales = ((a.prenom||'').charAt(0) + (a.nom||'').charAt(0)).toUpperCase() || '?'; return `<div class="demandeur-highlight"><div class="dh-avatar">${this.esc(initiales)}</div><div class="dh-info"><div class="dh-name">👤 ${this.esc(titre)} : ${this.esc(a.prenom + ' ' + a.nom)}</div><div class="dh-meta">${a.matricule ? `<strong>Matricule :</strong> ${this.esc(a.matricule)}` : ''}${a.fonction ? ` • <strong>Fonction :</strong> ${this.esc(a.fonction)}` : ''}${dir ? `<br><strong>Direction :</strong> ${this.esc(dir.codeDirection)}` : ''}${a.telephone ? `<br><strong>Téléphone :</strong> ${this.esc(a.telephone)}` : ''}</div></div></div>`; },
+  toast(msg, type='success', dur=3500) { let c = document.getElementById('toast-container'); const el = document.createElement('div'); el.className = 'toast ' + type; el.innerHTML = `<strong>${type==='error'?'✗':type==='warning'?'⚠':type==='info'?'ℹ':'✓'}</strong> ${this.esc(msg)}`; c.appendChild(el); setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, dur); },
+  confirm(msg) { return window.confirm(msg); },
+  scopeBanner() { const info = Scope.label(); if (!info.text) return ''; return `<div class="scope-banner ${info.cls}"><span class="scope-icon">${info.icon}</span><span>${info.text}</span></div>`; },
+  datalist(id, values) { if (!values || !values.length) return `<datalist id="${id}"></datalist>`; return `<datalist id="${id}">${values.map(v => `<option value="${Utils.esc(v)}"></option>`).join('')}</datalist>`; },
+  addDatalistOption(inputId, datalistId) {
+    const input = document.getElementById(inputId);
+    const datalist = document.getElementById(datalistId);
+    if (!input || !datalist) return;
+    const valeur = prompt('Nouvelle valeur :', input.value || '');
+    if (!valeur || !valeur.trim()) return;
+    const v = valeur.trim();
+    if (!Array.from(datalist.options).find(opt => opt.value.toLowerCase() === v.toLowerCase())) {
+      const option = document.createElement('option'); option.value = v; datalist.appendChild(option);
+    }
+    input.value = v;
+    Utils._persistDatalistValue(datalistId, v);
+    Utils.toast(`"${v}" ajouté`, 'success', 2000);
+  },
+  _persistDatalistValue(datalistId, valeur) {
+    if (datalistId === 'dl-mission-lieu-principal' || datalistId === 'dl-mission-lieu-depart' || datalistId === 'dl-dv-destinations') {
+      Utils._creerDestination(valeur);
+    }
+  },
+  _creerDestination(libelle) {
+    if (API.getDestinationByLibelle(libelle)) return;
+    const code = libelle.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z0-9]/g, '').substring(0, 20) || ('DEST' + Date.now());
+    try { API.createDestination({ code, libelle, ville: libelle, pays: 'Maroc', region: '', distanceRef: 0, actif: true }); } catch (e) {}
+  },
+  inputWithPlus(inputId, datalistId, placeholder, value = '', required = false) {
+    return `<div style="display:flex;gap:6px;"><input type="text" id="${inputId}" class="form-control" list="${datalistId}" placeholder="${placeholder}" ${required ? 'required' : ''} value="${Utils.esc(value || '')}" style="flex:1"><button type="button" class="btn btn-success" onclick="Utils.addDatalistOption('${inputId}', '${datalistId}')" style="padding:0 12px;font-size:16px;font-weight:bold;">+</button></div>`;
+  }
+};
+
+/* =====================================================
+   5. MODULE IMPRESSION
+   ===================================================== */
+const Printer = (() => {
+  function _imprimerHtml(html) {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    const lancer = () => setTimeout(() => { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch (e) {} finally { setTimeout(() => document.body.contains(iframe) && document.body.removeChild(iframe), 1500); } }, 300);
+    if (doc.readyState === 'complete') lancer(); else iframe.onload = lancer;
+  }
+  function _htmlOrdreMission(m) {
+    const esc = Utils.esc;
+    const participants = (m.participants || []).map(p => { const a = API.getAgent(p.idAgent); return a ? {...a, roleMission: p.roleMission, ordrePassage: p.ordrePassage} : null; }).filter(Boolean).sort((a,b) => (a.ordrePassage||0) - (b.ordrePassage||0));
+    const driver = participants.find(p => (p.fonction||'').toLowerCase().includes('chauffeur') || p.roleMission === 'CHAUFFEUR') || participants[0] || null;
+    const accompagnants = participants.filter(p => !driver || p.idAgent !== driver.idAgent);
+    let vehicule = null;
+    if (m.idVehicule) vehicule = API.getVehicule(m.idVehicule);
+    const fmtJMA = (d) => { if (!d) return '—'; const dt = new Date(d); if (isNaN(dt)) return '—'; const pad = (n) => String(n).padStart(2,'0'); return `${dt.getFullYear()}/${pad(dt.getMonth()+1)}/${pad(dt.getDate())}`; };
+    return `<div style="font-family:'Amiri',serif;direction:rtl;text-align:right;padding:20px 40px;min-height:273mm;display:flex;flex-direction:column"><div style="flex:1"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:14px"><div>${esc(m.lieuDepart||'الرباط')}، في: <strong>${Utils.formatDate(m.dateEmission)}</strong></div><div>الرقم : <strong>${esc(m.numeroOm)}</strong></div></div><div style="text-align:center;font-size:30px;font-weight:bold;margin:8px 0;letter-spacing:3px">أمر بمهمة</div><div style="width:170px;height:2px;background:#000;margin:0 auto 12px"></div><div style="font-size:11px;line-height:1.8"><div style="display:grid;grid-template-columns:180px 1fr;gap:10px;padding:3px 0"><div style="font-weight:bold">الإسم :</div><div style="border-bottom:1px dotted #999">${driver?esc(driver.prenom+' '+driver.nom):'—'}</div></div><div style="display:grid;grid-template-columns:180px 1fr;gap:10px;padding:3px 0"><div style="font-weight:bold">الدرجة :</div><div style="border-bottom:1px dotted #999">${driver?esc(driver.grade||'—'):'—'}</div></div><div style="display:grid;grid-template-columns:180px 1fr;gap:10px;padding:3px 0"><div style="font-weight:bold">الوظيفة :</div><div style="border-bottom:1px dotted #999">${driver?esc(driver.fonction||'—'):'—'}</div></div></div><div style="margin:10px 50px;font-size:11px">يسمح له(ا) باستعمال سيارة المصلحة للتنقل من <strong>${esc(m.lieuDepart||'الرباط')}</strong> إلى <strong>${esc(m.lieuPrincipal||'—')}</strong>.</div><div style="font-size:11px;line-height:1.8"><div style="display:grid;grid-template-columns:180px 1fr;gap:10px;padding:3px 0"><div style="font-weight:bold">لأجل :</div><div style="border-bottom:1px dotted #999">${esc(m.objet||'—')}</div></div><div style="display:grid;grid-template-columns:180px 1fr;gap:10px;padding:3px 0"><div style="font-weight:bold">تاريخ الذهاب :</div><div style="border-bottom:1px dotted #999">${fmtJMA(m.dateDepart)}</div></div><div style="display:grid;grid-template-columns:180px 1fr;gap:10px;padding:3px 0"><div style="font-weight:bold">تاريخ الإياب :</div><div style="border-bottom:1px dotted #999">${fmtJMA(m.dateRetour)}</div></div><div style="display:grid;grid-template-columns:180px 1fr;gap:10px;padding:3px 0"><div style="font-weight:bold">وسيلة النقل :</div><div style="border-bottom:1px dotted #999">${vehicule?esc(vehicule.immatriculation):'—'}</div></div>${driver && driver.telephone ? `<div style="display:grid;grid-template-columns:180px 1fr;gap:10px;padding:3px 0"><div style="font-weight:bold">رقم هاتف السائق :</div><div style="border-bottom:1px dotted #999" dir="ltr">${esc(driver.telephone)}</div></div>` : ''}<div style="display:grid;grid-template-columns:180px 1fr;gap:10px;padding:3px 0;align-items:flex-start"><div style="font-weight:bold;padding-top:4px">الأشخاص المرافقون :</div><div style="border-bottom:1px dotted #999;padding-bottom:6px">${accompagnants.length ? accompagnants.map(a => { const dirAcc = API.getDirection(a.idDirection); const dirLabel = dirAcc ? dirAcc.codeDirection : '—'; const tel = a.telephone || '—'; return `<div style="margin-bottom:6px;font-size:10.5px;line-height:1.6"><strong>${esc(a.prenom + ' ' + a.nom)}</strong><span style="color:#555;margin-right:8px"> — 📞 ${esc(tel)}</span><span style="color:#555;display:block;font-size:9.5px">🏢 ${esc(dirLabel)}</span></div>`; }).join('') : '—'}</div></div></div></div><div style="margin-top:auto;padding-top:6px;border-top:1px solid #999;display:flex;justify-content:space-between;font-size:7.5px;direction:ltr"><div style="text-align:left"><strong>DIRECTION DES AFFAIRES ADMINISTRATIVES ET JURIDIQUES</strong><br>B.P : 607, Station Dbagh, Avenue Hassan II - Rabat</div><div style="text-align:right;direction:rtl"><strong>مديرية الشؤون الإدارية والقانونية</strong><br>صندوق البريد : 607 محطة الدباغ شارع الحسن الثاني - الرباط</div></div></div>`;
+  }
+  function previsualiserOrdreMission(idMission) {
+    const m = API.getMission(idMission); if (!m) { Utils.toast('Mission introuvable', 'error'); return; }
+    App.openModal(`<div class="modal-overlay active"><div class="modal modal-wide"><div class="modal-header"><h3>📄 Aperçu — OM ${Utils.esc(m.numeroOm)}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div><div class="modal-body" style="background:#e9ecef"><div style="background:#fff;padding:20px;border-radius:6px">${_htmlOrdreMission(m)}</div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Fermer</button><button class="btn" onclick="Printer.imprimerOrdreMission(${idMission})">🖨️ Imprimer</button></div></div></div>`);
+  }
+  function imprimerOrdreMission(idMission) {
+    const m = API.getMission(idMission); if (!m) { Utils.toast('Mission introuvable', 'error'); return; }
+    const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>OM ${Utils.esc(m.numeroOm)}</title><link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet"><style>@page{size:A4;margin:0}body{font-family:'Amiri',serif;margin:0;padding:0}</style></head><body>${_htmlOrdreMission(m)}</body></html>`;
+    _imprimerHtml(html);
+  }
+  function imprimerDemandesVehicules() {
+    const demandes = Scope.demandesVehicules();
+    if (!demandes.length) { Utils.toast('Aucune demande', 'warning'); return; }
+    const lignes = demandes.map(d => { const dem = API.getAgent(d.idDemandeur); const dir = API.getDirection(d.idDirection); return `<tr><td><strong>${Utils.esc(d.numeroDemande)}</strong></td><td>${dem?Utils.esc(dem.prenom+' '+dem.nom):'—'}</td><td>${dir?Utils.esc(dir.codeDirection):'—'}</td><td>${Utils.esc(Utils.destsLabel(d))}</td><td>${Utils.formatDate(d.dateDepart)}</td><td>${Utils.formatDate(d.dateRetour)}</td><td>${Utils.esc(Utils.personnesList(d).join(' • ')||'—')}</td><td>${Utils.esc(API.getStatutVehiculeByCode(d.statut)?.libelle||d.statut)}</td></tr>`; }).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Demandes</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:'Segoe UI';padding:12mm}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#e6ecf7}</style></head><body><h1>Demandes de véhicules</h1><table><thead><tr><th>N°</th><th>Demandeur</th><th>Direction</th><th>Destinations</th><th>Départ</th><th>Retour</th><th>Personnes</th><th>Statut</th></tr></thead><tbody>${lignes}</tbody></table></body></html>`;
+    _imprimerHtml(html);
+  }
+  function imprimerBonVehicule(idDemande) {
+    const d = API.getDemandeVehicule(idDemande); if (!d) return;
+    const esc = Utils.esc; const dem = API.getAgent(d.idDemandeur); const dir = API.getDirection(d.idDirection);
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bon ${esc(d.numeroDemande)}</title><style>@page{size:A4;margin:15mm}body{font-family:'Segoe UI';padding:15mm}.header{text-align:center;border-bottom:3px double #0b3d91;padding-bottom:12px;margin-bottom:20px}h1{color:#0b3d91;font-size:24px;text-transform:uppercase}.grid{display:grid;grid-template-columns:200px 1fr;gap:10px;margin:20px 0}.lbl{font-weight:bold;color:#082a66}</style></head><body><div class="header"><h1>Demande de véhicule</h1><div>N° ${esc(d.numeroDemande)}</div></div><div class="grid"><div class="lbl">Demandeur :</div><div>${dem?esc(dem.prenom+' '+dem.nom):'—'}</div><div class="lbl">Direction :</div><div>${dir?esc(dir.codeDirection):'—'}</div><div class="lbl">Objet :</div><div>${esc(d.objet||'—')}</div><div class="lbl">Destinations :</div><div>${esc(Utils.destsLabel(d))}</div><div class="lbl">Période :</div><div>${Utils.formatDate(d.dateDepart)} → ${Utils.formatDate(d.dateRetour)}</div><div class="lbl">Personnes :</div><div>${esc(Utils.personnesList(d).join(' • ')||'—')}</div></div></body></html>`;
+    _imprimerHtml(html);
+  }
+  function imprimerListeVehicules() {
+    const vehicules = Scope.vehiculesParc();
+    if (!vehicules.length) { Utils.toast('Aucun véhicule', 'warning'); return; }
+    const lignes = vehicules.map(v => { const dir = API.getDirection(v.idDirection); return `<tr><td><strong>${Utils.esc(v.immatriculation)}</strong></td><td>${Utils.esc(v.marque)}</td><td>${Utils.esc(v.modele)}</td><td>${Utils.esc(v.type||'—')}</td><td>${Utils.esc(v.carburant||'—')}</td><td>${dir?Utils.esc(dir.codeDirection):'—'}</td><td>${Utils.esc(v.utilisateur||'—')}</td><td>${Utils.esc(v.statut||'—')}</td></tr>`; }).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Véhicules</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:'Segoe UI';padding:12mm}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#e6ecf7}</style></head><body><h1>Liste des véhicules</h1><table><thead><tr><th>Matricule</th><th>Marque</th><th>Modèle</th><th>Type</th><th>Carburant</th><th>Direction</th><th>Utilisateur</th><th>Statut</th></tr></thead><tbody>${lignes}</tbody></table></body></html>`;
+    _imprimerHtml(html);
+  }
+  function imprimerListeAgents(agents) {
+    const liste = agents || Scope.agents();
+    if (!liste.length) { Utils.toast('Aucun agent', 'warning'); return; }
+    const lignes = liste.map(a => { const dir = API.getDirection(a.idDirection); return `<tr><td><strong>${Utils.esc(a.matricule)}</strong></td><td>${Utils.esc(a.nom)}</td><td>${Utils.esc(a.prenom)}</td><td>${Utils.esc(a.fonction||'—')}</td><td>${dir?Utils.esc(dir.codeDirection):'—'}</td><td>${Utils.esc(a.email||'—')}</td><td>${Utils.esc(a.telephone||'—')}</td><td>${a.actif?'Actif':'Inactif'}</td></tr>`; }).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Agents</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:'Segoe UI';padding:12mm}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#e6ecf7}</style></head><body><h1>Liste des agents</h1><table><thead><tr><th>Matricule</th><th>Nom</th><th>Prénom</th><th>Fonction</th><th>Direction</th><th>Email</th><th>Téléphone</th><th>Statut</th></tr></thead><tbody>${lignes}</tbody></table></body></html>`;
+    _imprimerHtml(html);
+  }
+  return { imprimerDemandesVehicules, imprimerBonVehicule, imprimerListeVehicules, imprimerListeAgents, previsualiserOrdreMission, imprimerOrdreMission };
+})();
+
+/* =====================================================
+   6. MODULE EXCEL
+   ===================================================== */
+const Excel = (() => {
+  function exporter(tableau, nomFichier, nomFeuille = 'Données') {
+    if (!tableau || !tableau.length) { Utils.toast('Aucune donnée', 'warning'); return; }
+    const ws = XLSX.utils.json_to_sheet(tableau);
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, nomFeuille);
+    XLSX.writeFile(wb, `${nomFichier}_${new Date().toISOString().substring(0,10)}.xlsx`);
+    Utils.toast(`Export réussi`, 'success');
+  }
+  function agentsVersLignes() { return Scope.agents().map(a => { const dir = API.getDirection(a.idDirection); return {'Matricule':a.matricule,'Nom':a.nom,'Prénom':a.prenom,'Fonction':a.fonction,'Taux':a.taux||0,'Direction':dir?.codeDirection||'','Email':a.email,'Téléphone':a.telephone||'','Statut':a.actif?'Actif':'Inactif'}; }); }
+  function directionsVersLignes() { return Scope.directions().map(d => ({'Code':d.codeDirection,'Libellé':d.libelle,'Statut':d.actif?'Active':'Inactive'})); }
+  function destinationsVersLignes() { return API.getDestinations().map(d => ({'Code':d.code,'Libellé':d.libelle,'Ville':d.ville||'','Pays':d.pays||'','Statut':d.actif?'Active':'Inactive'})); }
+  function missionsVersLignes() { return Scope.missions().map(m => ({'N° OM':m.numeroOm,'Objet':m.objet,'Date départ':m.dateDepart,'Date retour':m.dateRetour,'Durée':Utils.dureeJours(m.dateDepart, m.dateRetour),'Statut':Utils.statutLibelle(m)})); }
+  function demandesVehiculesVersLignes() { return Scope.demandesVehicules().map(d => ({'N° Demande':d.numeroDemande,'Objet':d.objet,'Demandeur':Utils.agentNom(d.idDemandeur),'Destinations':Utils.destsLabel(d),'Statut':API.getStatutVehiculeByCode(d.statut)?.libelle||d.statut})); }
+  function parcAutoVersLignes() { return Scope.vehiculesParc().map(v => { const dir = API.getDirection(v.idDirection); return {'Matricule':v.immatriculation,'Marque':v.marque,'Modèle':v.modele,'Direction':dir?dir.codeDirection:'—','Statut':v.statut||''}; }); }
+  function statistiquesVersLignes() { const s = Scope.getStatistiques(); return [{'Indicateur':'Total missions','Valeur':s.total},{'Indicateur':'Jours cumulés','Valeur':s.totalJours}]; }
+  return {exporter, agentsVersLignes, directionsVersLignes, destinationsVersLignes, missionsVersLignes, demandesVehiculesVersLignes, parcAutoVersLignes, statistiquesVersLignes};
+})();
+
+/* =====================================================
+   7. APPLICATION SPA
+   ===================================================== */
+const App = (() => {
+  let currentPage = 'dashboard';
+  function visiblePages() { const role = Auth.session()?.role; if (!role) return []; const r = API.getRoleByCode(role); if (!r) return []; const allowed = r.pages || []; return API.PAGES_CATALOG.filter(p => allowed.includes(p.id)); }
+  function mount() {
+    const root = document.getElementById('root');
+    const session = Auth.session();
+    if (!session) { renderLogin(); return; }
+    const agent = Auth.currentAgent(); const nom = agent ? `${agent.prenom} ${agent.nom}` : session.login;
+    const pages = visiblePages(); if (!pages.some(p => p.id === currentPage)) currentPage = pages[0]?.id || 'dashboard';
+    root.innerHTML = `<header class="app-header"><div class="brand"><div class="logo">GM</div><div><div>Gestion des Missions</div><small>Administration Publique</small></div></div><nav><ul>${pages.map(p => `<li><a data-page="${p.id}" class="${p.id===currentPage?'active':''}">${p.label}</a></li>`).join('')}</ul></nav><div class="user-info"><div class="avatar">${(nom.charAt(0)||'?').toUpperCase()}</div><div><div class="info-name">${Utils.esc(nom)}</div><div class="info-role">${Utils.esc(session.role)}</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.15)" onclick="App.logout()">Déconnexion</button></div></header><main class="container" id="page-content"></main><footer class="app-footer">© ${new Date().getFullYear()} DAAJ</footer>`;
+    root.querySelectorAll('nav a[data-page]').forEach(a => a.addEventListener('click', () => go(a.dataset.page)));
+    renderPage();
+  }
+  function go(page) { currentPage = page; document.querySelectorAll('nav a[data-page]').forEach(a => a.classList.toggle('active', a.dataset.page === page)); renderPage(); }
+  function renderPage() {
+    const c = document.getElementById('page-content');
+    if (currentPage === 'dashboard') c.innerHTML = Pages.dashboard();
+    else if (currentPage === 'missions') c.innerHTML = Pages.missions();
+    else if (currentPage === 'validation') c.innerHTML = Pages.validation();
+    else if (currentPage === 'vehicules') c.innerHTML = Pages.vehicules();
+    else if (currentPage === 'parc_auto') c.innerHTML = Pages.parcAuto();
+    else if (currentPage === 'agents') c.innerHTML = Pages.agents();
+    else if (currentPage === 'directions') c.innerHTML = Pages.directions();
+    else if (currentPage === 'destinations') c.innerHTML = Pages.destinations();
+    else if (currentPage === 'statistiques') c.innerHTML = Pages.statistiques();
+    else if (currentPage === 'comptes') c.innerHTML = Pages.comptes();
+    else if (currentPage === 'roles') c.innerHTML = Pages.roles();
+    if (currentPage === 'missions') afterMissions();
+    if (currentPage === 'vehicules') afterVehicules();
+    if (currentPage === 'parc_auto') afterParcAuto();
+    if (currentPage === 'agents') afterAgents();
+    if (currentPage === 'directions') afterDirections();
+    if (currentPage === 'destinations') afterDestinations();
+    if (currentPage === 'statistiques') afterStatistiques();
+    if (currentPage === 'comptes') afterComptes();
+    if (currentPage === 'roles') afterRoles();
+  }
+  function logout() { Auth.logout(); }
+  function renderLogin() {
+    const root = document.getElementById('root');
+    root.innerHTML = `<div class="login-wrapper"><div class="login-card"><div class="logo-big">GM</div><h1>Gestion des Ordres de Mission</h1><p>Administration Publique — Accès sécurisé</p><form id="login-form"><div class="form-group"><label>Identifiant <span class="required">*</span></label><input type="text" id="login" class="form-control" placeholder="ex: y.tazi" required autofocus></div><div class="form-group"><label>Mot de passe <span class="required">*</span></label><input type="password" id="password" class="form-control" placeholder="••••••" required></div><button type="submit" class="btn">Se connecter</button></form></div></div>`;
+    document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); try { Auth.login(document.getElementById('login').value.trim(), document.getElementById('password').value); Utils.toast('Connexion réussie', 'success', 1200); setTimeout(() => { currentPage = 'dashboard'; mount(); }, 400); } catch (err) { Utils.toast(err.message, 'error'); } });
+  }
+  function openModal(html) { document.getElementById('modal-container').innerHTML = html; }
+  function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
+  function refresh() { renderPage(); }
+  return { mount, go, logout, openModal, closeModal, refresh };
+})();
+
+/* =====================================================
+   8. PAGES
+   ===================================================== */
+const Pages = {
+  dashboard() {
+    const stats = Scope.getStatistiques();
+    const missions = Scope.missions();
+    const enCours = missions.filter(m => ['VALIDE','EN_COURS','OM_ETABLI'].includes(Utils.statutCode(m))).length;
+    const enAttente = missions.filter(m => ['SOUMIS','VALIDE_N1','VALIDE_N2','TRANSMIS_SSPA'].includes(Utils.statutCode(m))).length;
+    const recentes = missions.slice().sort((a,b) => (b.dateEmission||'').localeCompare(a.dateEmission||'')).slice(0,5);
+    const session = Auth.session();
+    const mesValidations = Scope.validationsEnAttente();
+    return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Tableau de bord</h1><div class="subtitle">Vue d'ensemble</div></div><div class="actions-cell"><button class="btn btn-outline" onclick="Actions.exportComplet()">📦 Export</button><button class="btn" onclick="Actions.nouvelleMission()">+ Nouvelle mission</button></div></div><div class="kpi-grid"><div class="kpi"><div class="kpi-label">Missions visibles</div><div class="kpi-value">${stats.total}</div></div><div class="kpi kpi-info"><div class="kpi-label">En cours</div><div class="kpi-value">${enCours}</div></div><div class="kpi kpi-warning"><div class="kpi-label">En attente</div><div class="kpi-value">${enAttente}</div></div><div class="kpi kpi-success"><div class="kpi-label">Jours de mission</div><div class="kpi-value">${stats.totalJours}</div></div></div><div class="card"><div class="card-header"><h2>À traiter par moi</h2></div><div>${!session?.idAgent ? '<div class="alert alert-warning">Compte non relié</div>' : mesValidations.length === 0 ? '<div class="alert alert-info">Aucune action 🎉</div>' : mesValidations.map(v => { const m = API.getMission(v.idMission); if (!m) return ''; return `<div style="margin-bottom:14px;padding:10px;border-left:3px solid var(--warning);background:var(--gray-100)"><strong>${Utils.esc(m.numeroOm)}</strong><div class="text-muted" style="font-size:12px">${Utils.esc(m.objet)}</div><button class="btn btn-sm mt-2" onclick="App.go('validation');setTimeout(()=>Actions.openAction(${v.idValidation}),50)">Traiter</button></div>`; }).join('')}</div></div><div class="card"><div class="card-header"><h2>Missions récentes</h2><button class="btn btn-sm btn-outline" onclick="App.go('missions')">Voir tout</button></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>N° OM</th><th>Objet</th><th>Départ</th><th>Statut</th></tr></thead><tbody>${recentes.length ? recentes.map(m => { const canPrint = ['OM_ETABLI','VALIDE','EN_COURS','CLOTURE'].includes(Utils.statutCode(m)); return `<tr><td><strong>${Utils.esc(m.numeroOm)}</strong></td><td>${Utils.esc(m.objet.substring(0,40))}</td><td>${Utils.formatDate(m.dateDepart)}</td><td><div style="display:flex;gap:10px;align-items:center">${Utils.badgeStatut(m)}${canPrint ? `<button class="om-icon-btn" onclick="Printer.previsualiserOrdreMission(${m.idMission})"></button>` : ''}</div></td></tr>`; }).join('') : '<tr><td colspan="4" class="text-center text-muted" style="padding:20px">Aucune mission</td></tr>'}</tbody></table></div></div>`;
+  },
+  missions() { return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Ordres de mission</h1></div><div class="actions-cell"><button class="btn btn-outline" onclick="Excel.exporter(Excel.missionsVersLignes(),'missions','Missions')">📤 Exporter</button><button class="btn" onclick="Actions.nouvelleMission()">+ Nouvelle mission</button></div></div><div class="card"><div class="form-grid"><div class="form-group"><label>Statut</label><select id="filter-statut" class="form-control"><option value="">Tous</option>${API.getStatuts().map(s => `<option value="${s.idStatut}">${s.libelle}</option>`).join('')}</select></div><div class="form-group"><label>Direction</label><select id="filter-mission-direction" class="form-control"><option value="">Toutes</option>${Scope.directions().map(d => `<option value="${d.idDirection}">${d.libelle}</option>`).join('')}</select></div><div class="form-group"><label>Recherche</label><input type="text" id="filter-search" class="form-control" placeholder="N°, objet..."></div><div class="form-group" style="justify-content:flex-end"><button class="btn btn-secondary" onclick="Actions.resetFiltres()">Réinitialiser</button></div></div></div><div class="card"><div class="table-wrapper"><table class="data-table"><thead><tr><th>N° OM</th><th>Objet</th><th>Direction</th><th>Demandeur</th><th>Départ</th><th>Retour</th><th>Statut</th><th>OM</th><th>Actions</th></tr></thead><tbody id="missions-tbody"></tbody></table></div></div>`; },
+  validation() { const session = Auth.session(); const hasAgent = !!session?.idAgent; const enAttente = Scope.validationsEnAttente(); const historique = hasAgent ? API.getValidations().filter(v => v.idValidateur === session.idAgent && v.decision !== 'EN_ATTENTE').sort((a,b) => (b.dateDecision||'').localeCompare(a.dateDecision||'')) : []; return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Circuit de validation</h1></div></div><div class="card"><div class="card-header"><h2>Validations en attente</h2><span class="badge badge-SOUMIS">${enAttente.length}</span></div><div>${!hasAgent ? '<div class="alert alert-warning">Compte non relié</div>' : enAttente.length === 0 ? '<div class="alert alert-info">Aucune validation 🎉</div>' : enAttente.map(v => { const m = API.getMission(v.idMission); if (!m) return ''; const wf = API.getWorkflow(m.idWorkflow); return `<div class="card" style="border-left:4px solid var(--warning);margin-bottom:14px"><div class="flex-between"><div><strong style="color:var(--primary-dark);font-size:15px">${Utils.esc(m.numeroOm)}</strong><div style="margin-top:4px">${Utils.esc(m.objet)}</div><div class="text-muted" style="margin-top:6px;font-size:12px"><strong>Étape ${v.niveau}/${wf?.etapes?.length||'?'}</strong> — ${Utils.esc(v.libelleEtape||'')}</div>${Actions.workflowViz(m.idMission)}</div><div class="actions-cell"><button class="btn btn-sm btn-success" onclick="Actions.openAction(${v.idValidation})">Traiter</button><button class="btn btn-sm btn-outline" onclick="Actions.detail(${m.idMission})">Voir</button></div></div></div>`; }).join('')}</div></div><div class="card"><div class="card-header"><h2>Historique</h2></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Mission</th><th>Objet</th><th>Niveau</th><th>Décision</th><th>Date</th><th>OM</th></tr></thead><tbody>${historique.length ? historique.map(v => { const m = API.getMission(v.idMission); if (!m) return ''; const canPrintOM = ['OM_ETABLI','VALIDE','EN_COURS','CLOTURE'].includes(Utils.statutCode(m)); return `<tr><td><strong>${Utils.esc(m.numeroOm)}</strong></td><td>${Utils.esc((m.objet||'').substring(0,45))}</td><td>Niveau ${v.niveau}</td><td>${Utils.esc(v.decision)}</td><td>${Utils.formatDateTime(v.dateDecision)}</td><td>${canPrintOM ? `<button class="om-icon-btn" onclick="Printer.previsualiserOrdreMission(${m.idMission})"></button>` : '—'}</td></tr>`; }).join('') : '<tr><td colspan="6" class="text-center text-muted">Aucun historique</td></tr>'}</tbody></table></div></div>`; },
+  vehicules() { const session = Auth.session(); const allDemandes = Scope.demandesVehicules(); const enAttente = allDemandes.filter(d => d.statut === 'SOUMIS'); return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Demandes de véhicules</h1></div><div class="actions-cell"><button class="btn btn-outline" onclick="Excel.exporter(Excel.demandesVehiculesVersLignes(),'demandes_vehicules','Demandes')">📤 Exporter</button><button class="btn btn-info" onclick="Printer.imprimerDemandesVehicules()">🖨️ Imprimer</button><button class="btn" onclick="Actions.nouvelleDemandeVehicule()">+ Nouvelle demande</button></div></div><div class="kpi-grid"><div class="kpi kpi-info"><div class="kpi-label">Total</div><div class="kpi-value">${allDemandes.length}</div></div><div class="kpi kpi-warning"><div class="kpi-label">En attente</div><div class="kpi-value">${enAttente.length}</div></div><div class="kpi kpi-success"><div class="kpi-label">Affectées</div><div class="kpi-value">${allDemandes.filter(d => d.statut === 'AFFECTE').length}</div></div><div class="kpi"><div class="kpi-label">Terminées</div><div class="kpi-value">${allDemandes.filter(d => d.statut === 'TERMINE').length}</div></div><div class="kpi kpi-danger"><div class="kpi-label">Refusées</div><div class="kpi-value">${allDemandes.filter(d => d.statut === 'REFUSE').length}</div></div></div><div class="card"><div class="form-grid"><div class="form-group"><label>Statut</label><select id="filter-veh-statut" class="form-control"><option value="">Tous</option>${API.getStatutsVehicule().map(s => `<option value="${s.code}">${s.libelle}</option>`).join('')}</select></div><div class="form-group"><label>Direction</label><select id="filter-veh-direction" class="form-control"><option value="">Toutes</option>${Scope.directions().map(d => `<option value="${d.idDirection}">${d.libelle}</option>`).join('')}</select></div><div class="form-group"><label>Recherche</label><input type="text" id="filter-veh-search" class="form-control" placeholder="N°, objet, demandeur..."></div><div class="form-group" style="justify-content:flex-end"><button class="btn btn-secondary" onclick="Actions.resetFiltresVehicules()">Réinitialiser</button></div></div></div><div class="card"><div class="table-wrapper"><table class="data-table"><thead><tr><th>N°</th><th>Objet</th><th>Demandeur</th><th>Destination(s)</th><th>Départ</th><th>Retour</th><th>Personnes</th><th>Statut</th><th>Bon</th><th>Actions</th></tr></thead><tbody id="vehicules-tbody"></tbody></table></div></div>`; },
+  parcAuto() { const vehicules = Scope.vehiculesParc(); return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Parc auto</h1></div><div class="actions-cell"><button class="btn btn-outline" onclick="Excel.exporter(Excel.parcAutoVersLignes(),'parc_auto','Parc auto')">📤 Exporter</button><button class="btn btn-info" onclick="Printer.imprimerListeVehicules()">🖨️ Imprimer</button><button class="btn" onclick="Actions.openVehiculeModal(null)">+ Nouveau</button></div></div><div class="kpi-grid"><div class="kpi"><div class="kpi-label">Total</div><div class="kpi-value">${vehicules.length}</div></div><div class="kpi kpi-success"><div class="kpi-label">Disponibles</div><div class="kpi-value">${vehicules.filter(v => v.statut === 'DISPONIBLE').length}</div></div><div class="kpi kpi-warning"><div class="kpi-label">Affectés</div><div class="kpi-value">${vehicules.filter(v => v.statut === 'AFFECTE').length}</div></div><div class="kpi kpi-danger"><div class="kpi-label">Maintenance</div><div class="kpi-value">${vehicules.filter(v => v.statut === 'MAINTENANCE').length}</div></div></div><div class="card"><div class="form-grid"><div class="form-group"><label>Recherche</label><input type="text" id="filter-parc-auto" class="form-control" placeholder="Matricule, marque..."></div><div class="form-group"><label>Statut</label><select id="filter-parc-auto-statut" class="form-control"><option value="">Tous</option><option value="DISPONIBLE">Disponible</option><option value="AFFECTE">Affecté</option><option value="MAINTENANCE">Maintenance</option><option value="HORS_SERVICE">Hors service</option></select></div><div class="form-group"><label>Direction</label><select id="filter-parc-auto-direction" class="form-control"><option value="">Toutes</option>${Scope.directions().map(d => `<option value="${d.idDirection}">${Utils.esc(d.codeDirection)}</option>`).join('')}</select></div><div class="form-group" style="justify-content:flex-end"><button class="btn btn-secondary" onclick="Actions.resetFiltresParcAuto()">Réinitialiser</button></div></div></div><div class="card"><div class="card-header"><h2>Liste</h2><span class="badge badge-SOUMIS" id="parc-auto-count">${vehicules.length} véhicule(s)</span></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Matricule</th><th>Marque</th><th>Modèle</th><th>Type</th><th>Carburant</th><th>Direction</th><th>Utilisateur</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="parc-auto-tbody"></tbody></table></div></div>`; },
+  agents() { const agents = Scope.agents(); const actifs = agents.filter(a => a.actif).length; return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Agents</h1></div><div class="actions-cell"><button class="btn btn-outline" onclick="Excel.exporter(Excel.agentsVersLignes(),'agents','Agents')">📤 Exporter</button><button class="btn btn-info" onclick="Printer.imprimerListeAgents(Scope.agents())">🖨️ Imprimer</button><button class="btn" onclick="Actions.nouvelAgent()">+ Nouvel agent</button></div></div><div class="kpi-grid"><div class="kpi"><div class="kpi-label">Total</div><div class="kpi-value">${agents.length}</div></div><div class="kpi kpi-success"><div class="kpi-label">Actifs</div><div class="kpi-value">${actifs}</div></div><div class="kpi kpi-danger"><div class="kpi-label">Inactifs</div><div class="kpi-value">${agents.length - actifs}</div></div></div><div class="card"><div class="form-grid"><div class="form-group"><label>Recherche</label><input type="text" id="filter-agent" class="form-control" placeholder="Nom, matricule..."></div><div class="form-group"><label>Direction</label><select id="filter-agent-direction" class="form-control"><option value="">Toutes</option>${Scope.directions().map(d => `<option value="${d.idDirection}">${Utils.esc(d.codeDirection)}</option>`).join('')}</select></div><div class="form-group"><label>Statut</label><select id="filter-agent-statut" class="form-control"><option value="">Tous</option><option value="actif">Actifs</option><option value="inactif">Inactifs</option></select></div><div class="form-group" style="justify-content:flex-end"><button class="btn btn-secondary" onclick="Actions.resetFiltresAgents()">Réinitialiser</button></div></div></div><div class="card"><div class="card-header"><h2>Liste</h2><span class="badge badge-SOUMIS" id="agents-count">${agents.length} agent(s)</span></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Matricule</th><th>Nom</th><th>Fonction</th><th>Taux</th><th>Direction</th><th>Email</th><th>Téléphone</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="agents-tbody"></tbody></table></div></div>`; },
+  directions() { return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Directions</h1></div><div class="actions-cell"><button class="btn btn-outline" onclick="Excel.exporter(Excel.directionsVersLignes(),'directions','Directions')">📤 Exporter</button><button class="btn" onclick="Actions.nouvelleDirection()">+ Nouvelle</button></div></div><div class="card"><div class="form-group"><label>Recherche</label><input type="text" id="filter-direction" class="form-control"></div></div><div class="card"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Code</th><th>Libellé</th><th>Nb agents</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="directions-tbody"></tbody></table></div></div>`; },
+  destinations() { return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Destinations</h1></div><div class="actions-cell"><button class="btn btn-outline" onclick="Excel.exporter(Excel.destinationsVersLignes(),'destinations','Destinations')">📤 Exporter</button><button class="btn" onclick="Actions.nouvelleDestination()">+ Nouvelle</button></div></div><div class="card"><div class="form-group"><label>Recherche</label><input type="text" id="filter-destination" class="form-control"></div></div><div class="card"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Code</th><th>Libellé</th><th>Ville</th><th>Pays</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="destinations-tbody"></tbody></table></div></div>`; },
+  statistiques() { const stats = Scope.getStatistiques(); return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Statistiques</h1></div></div><div class="kpi-grid"><div class="kpi"><div class="kpi-label">Total</div><div class="kpi-value">${stats.total}</div></div><div class="kpi kpi-info"><div class="kpi-label">Jours cumulés</div><div class="kpi-value">${stats.totalJours}</div></div></div><div class="card"><div class="card-header"><h2>Par statut</h2></div><canvas id="chart-statut" height="220"></canvas></div><div class="card"><div class="card-header"><h2>Par direction</h2></div><canvas id="chart-direction" height="220"></canvas></div>`; },
+  comptes() { return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Comptes</h1></div><div class="actions-cell"><button class="btn" onclick="Actions.openCompteModal(null)">+ Nouveau</button></div></div><div class="card"><div class="form-grid"><div class="form-group"><label>Recherche</label><input type="text" id="filter-compte" class="form-control"></div><div class="form-group"><label>Rôle</label><select id="filter-compte-role" class="form-control"><option value="">Tous</option>${API.getRoles().map(r => `<option value="${Utils.esc(r.code)}">${Utils.esc(r.libelle)}</option>`).join('')}</select></div><div class="form-group" style="justify-content:flex-end"><button class="btn btn-secondary" onclick="Actions.resetFiltresComptes()">Réinitialiser</button></div></div></div><div class="card"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Login</th><th>Nom</th><th>Rôle</th><th>Agent</th><th>Dernière connexion</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="comptes-tbody"></tbody></table></div></div>`; },
+  roles() { return `${Utils.scopeBanner()}<div class="page-title"><div><h1>Rôles</h1></div><div class="actions-cell"><button class="btn" onclick="Actions.openRoleModal(null)">+ Nouveau</button></div></div><div class="card"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Code</th><th>Libellé</th><th>Pages</th><th>Nb utilisateurs</th><th>Type</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="roles-tbody"></tbody></table></div></div>`; }
+};
+
+/* =====================================================
+   9. ACTIONS
+   ===================================================== */
+const Actions = {
+  resetFiltres() { ['filter-statut','filter-mission-direction','filter-search'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; }); Actions.renderMissions(); },
+  resetFiltresVehicules() { ['filter-veh-statut','filter-veh-direction','filter-veh-search'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; }); Actions.renderVehicules(); },
+  resetFiltresParcAuto() { ['filter-parc-auto','filter-parc-auto-statut','filter-parc-auto-direction'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; }); Actions.renderParcAuto(); },
+  resetFiltresAgents() { ['filter-agent','filter-agent-direction','filter-agent-statut'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; }); Actions.renderAgents(); },
+  resetFiltresComptes() { ['filter-compte','filter-compte-role'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; }); Actions.renderComptes(); },
+
+  workflowViz(idMission) {
+    const m = API.getMission(idMission); if (!m) return '';
+    const wf = API.getWorkflow(m.idWorkflow); if (!wf || !wf.etapes) return '';
+    const vals = API.getValidationsByMission(idMission);
+    const steps = wf.etapes.map(e => {
+      const v = vals.find(x => x.niveau === e.niveau);
+      let cls = '';
+      if (v) { if (v.decision === 'VALIDE') cls = 'done'; else if (v.decision === 'REJETE') cls = 'rejected'; else if (v.decision === 'EN_ATTENTE') cls = 'current'; }
+      return `<div class="step ${cls}"><span class="num">${e.niveau}</span><span>${Utils.esc(e.libelle.substring(0,30))}</span></div>`;
+    }).join('<span class="arrow">→</span>');
+    return `<div class="workflow-viz">${steps}</div>`;
+  },
+
+  renderMissions() {
+    const tbody = document.getElementById('missions-tbody'); if (!tbody) return;
+    const fStatut = document.getElementById('filter-statut')?.value || '';
+    const fDir = document.getElementById('filter-mission-direction')?.value || '';
+    const fSearch = (document.getElementById('filter-search')?.value || '').trim().toLowerCase();
+    let list = Scope.missions();
+    if (fStatut) list = list.filter(m => String(m.idStatut) === fStatut);
+    if (fDir) list = list.filter(m => m.idDirection == fDir);
+    if (fSearch) list = list.filter(m => (m.numeroOm||'').toLowerCase().includes(fSearch) || (m.objet||'').toLowerCase().includes(fSearch));
+    list.sort((a,b) => (b.dateEmission||'').localeCompare(a.dateEmission||''));
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:30px">Aucune mission</td></tr>'; return; }
+    tbody.innerHTML = list.map(m => {
+      const demandeur = API.getAgent(m.idDemandeur);
+      const direction = API.getDirection(m.idDirection);
+      const statutCode = Utils.statutCode(m);
+      const canPrintOM = ['OM_ETABLI','VALIDE','EN_COURS','CLOTURE'].includes(statutCode);
+      return `<tr><td><strong>${Utils.esc(m.numeroOm)}</strong></td><td>${Utils.esc((m.objet||'').substring(0,45))}</td><td>${direction ? Utils.esc(direction.codeDirection) : '—'}</td><td>${demandeur ? Utils.esc(demandeur.prenom + ' ' + demandeur.nom) : '—'}</td><td>${Utils.formatDate(m.dateDepart)}</td><td>${Utils.formatDate(m.dateRetour)}</td><td>${Utils.badgeStatut(m)}</td><td style="text-align:center">${canPrintOM ? `<button class="om-icon-btn" onclick="Printer.previsualiserOrdreMission(${m.idMission})"></button>` : '—'}</td><td><button class="btn btn-sm btn-outline" onclick="Actions.detail(${m.idMission})">Détail</button></td></tr>`;
+    }).join('');
+  },
+
+  detail(idMission) {
+    const m = API.getMission(idMission); if (!m) return;
+    const demandeur = API.getAgent(m.idDemandeur);
+    const validations = API.getValidationsByMission(idMission);
+    const participants = (m.participants || []).map(p => { const a = API.getAgent(p.idAgent); return a ? {...a, roleMission: p.roleMission} : null; }).filter(Boolean);
+    const statutCode = Utils.statutCode(m);
+    const canPrintOM = ['OM_ETABLI','VALIDE','EN_COURS','CLOTURE'].includes(statutCode);
+    App.openModal(`
+      <div class="modal-overlay active"><div class="modal modal-wide">
+        <div class="modal-header"><h3>📋 ${Utils.esc(m.numeroOm)}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div>
+        <div class="modal-body">
+          <div class="flex-between" style="margin-bottom:16px"><h3>${Utils.esc(m.objet)}</h3>${Utils.badgeStatut(m)}</div>
+          <div class="form-grid" style="margin-bottom:20px">
+            <div><strong>Demandeur :</strong><br>${demandeur ? Utils.esc(demandeur.prenom + ' ' + demandeur.nom) : '—'}</div>
+            <div><strong>Période :</strong><br>${Utils.formatDate(m.dateDepart)} → ${Utils.formatDate(m.dateRetour)}</div>
+            <div><strong>Destination :</strong><br>${Utils.esc(m.lieuPrincipal || '—')}</div>
+          </div>
+          <h4>👥 Participants (${participants.length})</h4>
+          <div class="table-wrapper" style="margin-top:10px"><table class="data-table"><thead><tr><th>Nom</th><th>Matricule</th><th>Fonction</th><th>Téléphone</th><th>Direction</th></tr></thead><tbody>${participants.length ? participants.map(p => { const dirP = API.getDirection(p.idDirection); return `<tr><td><strong>${Utils.esc(p.prenom + ' ' + p.nom)}</strong></td><td>${Utils.esc(p.matricule || '—')}</td><td>${Utils.esc(p.fonction || '—')}</td><td>📞 ${Utils.esc(p.telephone || '—')}</td><td>${dirP ? Utils.esc(dirP.codeDirection) : '—'}</td></tr>`; }).join('') : '<tr><td colspan="5" class="text-center">Aucun</td></tr>'}</tbody></table></div>
+          ${validations.length ? `<h4 style="margin-top:20px">📜 Historique</h4><div class="timeline" style="margin-top:14px">${validations.map(v => { const cls = v.decision === 'VALIDE' ? 'done' : v.decision === 'REJETE' ? 'rejected' : 'pending'; const isEtapeSSPA = v.decision === 'VALIDE' && v.libelleEtape && v.libelleEtape.toLowerCase().includes('établissement'); return `<div class="timeline-item ${cls}"><div class="tl-title">Niveau ${v.niveau} — ${Utils.esc(v.libelleEtape||'')} ${isEtapeSSPA && canPrintOM ? `<button class="om-icon-btn" style="margin-inline-start:8px" onclick="Printer.previsualiserOrdreMission(${idMission})"></button>` : ''}</div><div class="tl-meta">${Utils.esc(Utils.agentNom(v.idValidateur))} — <strong>${Utils.esc(v.decision)}</strong></div></div>`; }).join('')}</div>` : ''}
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Fermer</button>${canPrintOM ? `<button class="btn btn-info" onclick="Printer.previsualiserOrdreMission(${idMission})">📄 Aperçu OM</button>` : ''}</div>
+      </div></div>`);
+  },
+
+  /* ⭐ NOUVELLE MISSION : Crée DIRECTEMENT la validation pour le DIRECTEUR de la direction */
+  nouvelleMission() {
+    const session = Auth.session();
+    const agent = Auth.currentAgent();
+    if (!session?.idAgent) { Utils.toast('Compte non relié à un agent', 'error'); return; }
+    const directions = Scope.directions();
+    const agents = API.getAgents().filter(a => a.actif);
+    const valLieuDepart = ['Rabat', 'Casablanca', 'Marrakech', 'Fès', 'Tanger', 'Agadir'];
+    const valLieuPrincipal = API.getDestinations().map(d => d.libelle);
+    App.openModal(`
+      <div class="modal-overlay active"><div class="modal modal-wide">
+        <div class="modal-header"><h3>➕ Nouvelle mission</h3><button class="modal-close" onclick="App.closeModal()">×</button></div>
+        <div class="modal-body">
+          ${Utils.datalist('dl-mission-lieu-depart', valLieuDepart)}
+          ${Utils.datalist('dl-mission-lieu-principal', valLieuPrincipal)}
+          <form id="form-mission">
+            <div class="form-grid">
+              <div class="form-group full-width"><label>Objet <span class="required">*</span></label><input type="text" id="m-objet" class="form-control" required></div>
+              <div class="form-group"><label>Direction <span class="required">*</span></label><select id="m-direction" class="form-control" required>${directions.map(d => `<option value="${d.idDirection}" ${agent && agent.idDirection === d.idDirection ? 'selected' : ''}>${Utils.esc(d.codeDirection)}</option>`).join('')}</select></div>
+              <div class="form-group"><label>Date d'émission <span class="required">*</span></label><input type="date" id="m-date-emission" class="form-control" required value="${new Date().toISOString().substring(0,10)}"></div>
+              <div class="form-group"><label>Lieu de départ <span class="required">*</span></label>${Utils.inputWithPlus('m-lieu-depart', 'dl-mission-lieu-depart', 'Saisir...', 'Rabat', true)}</div>
+              <div class="form-group"><label>Destination principale <span class="required">*</span></label>${Utils.inputWithPlus('m-lieu-principal', 'dl-mission-lieu-principal', 'Saisir...', '', true)}</div>
+              <div class="form-group"><label>Date départ <span class="required">*</span></label><input type="datetime-local" id="m-date-depart" class="form-control" required></div>
+              <div class="form-group"><label>Date retour <span class="required">*</span></label><input type="datetime-local" id="m-date-retour" class="form-control" required></div>
+              <div class="form-group"><label>Budget (MAD)</label><input type="number" id="m-budget" class="form-control" value="0"></div>
+              <div class="form-group"><label>Pays</label><input type="text" id="m-pays" class="form-control" value="Maroc"></div>
+            </div>
+            <h4 style="margin-top:24px;color:var(--primary-dark)">👥 Participants</h4>
+            <div style="background:var(--gray-100);padding:12px;border-radius:8px;margin-bottom:12px">
+              <input type="text" id="m-part-search" class="form-control" placeholder="🔍 Rechercher par nom, prénom, matricule, fonction..." autocomplete="off" style="margin-bottom:6px">
+              <select id="m-part-select" class="form-control" size="5" style="height:auto"><option value="">— Sélectionner —</option>${agents.map(a => `<option value="${a.idAgent}">${Utils.esc(a.prenom + ' ' + a.nom)} (${Utils.esc(a.matricule)}) — ${Utils.esc(a.fonction || '')}</option>`).join('')}</select>
+              <small class="text-muted" id="m-part-count-hint" style="display:block;margin-top:6px">${agents.length} agent(s) disponible(s)</small>
+              <button type="button" class="btn btn-success mt-2" onclick="Actions.missionAddParticipantFromSelect()">+ Ajouter</button>
+              <button type="button" class="btn btn-outline mt-2" onclick="Actions.missionAddSelf()">+ Moi-même</button>
+            </div>
+            <div id="m-participants-list" style="border:1px solid var(--gray-200);border-radius:8px;padding:10px;min-height:60px"><div class="text-muted" style="text-align:center;padding:16px">Aucun participant</div></div>
+          </form>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn btn-success" onclick="Actions.saveMission(true)">Enregistrer &amp; Soumettre</button></div>
+      </div></div>`);
+
+    const searchInput = document.getElementById('m-part-search');
+    const selectAgent = document.getElementById('m-part-select');
+    const countHint = document.getElementById('m-part-count-hint');
+    if (searchInput && selectAgent) {
+      const allAgents = agents.map(a => ({ value: String(a.idAgent), label: `${a.prenom} ${a.nom} (${a.matricule}) — ${a.fonction || ''}`, search: `${a.prenom} ${a.nom} ${a.matricule} ${a.fonction || ''} ${a.grade || ''} ${a.affectation || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') }));
+      const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      searchInput.addEventListener('input', () => {
+        const q = norm(searchInput.value.trim());
+        const sv = selectAgent.value;
+        const filtres = allAgents.filter(o => !q || norm(o.search).includes(q));
+        selectAgent.innerHTML = `<option value="">— Sélectionner un agent —</option>` + filtres.map(o => `<option value="${o.value}" ${o.value === sv ? 'selected' : ''}>${Utils.esc(o.label)}</option>`).join('');
+        if (countHint) countHint.textContent = `${filtres.length} / ${allAgents.length} agent(s)`;
+        if (filtres.length === 1 && !sv) selectAgent.value = filtres[0].value;
+      });
+      setTimeout(() => searchInput.focus(), 100);
+    }
+
+    Actions._missionParticipants = [];
+    if (agent) Actions.missionAddParticipantToList({ idAgent: agent.idAgent, roleMission: 'CHEF_MISSION', ordrePassage: 1 });
+  },
+
+  missionAddParticipantToList(data) {
+    if (!Actions._missionParticipants) Actions._missionParticipants = [];
+    if (Actions._missionParticipants.find(p => p.idAgent === data.idAgent)) { Utils.toast('Déjà dans la liste', 'warning'); return; }
+    const agent = API.getAgent(data.idAgent);
+    const direction = agent ? API.getDirection(agent.idDirection) : null;
+    data.telephone = agent ? (agent.telephone || '—') : '—';
+    data.directionAffectation = direction ? direction.codeDirection : '—';
+    Actions._missionParticipants.push(data);
+    Actions.renderMissionParticipants();
+  },
+
+  missionAddParticipantFromSelect() {
+    const sel = document.getElementById('m-part-select');
+    if (!sel || !sel.value) { Utils.toast('Sélectionnez un agent', 'warning'); return; }
+    const idAgent = Number(sel.value);
+    const a = API.getAgent(idAgent); if (!a) return;
+    const role = confirm(`Rôle de ${a.prenom} ${a.nom} ?\nOK = Chef\nAnnuler = Membre`) ? 'CHEF_MISSION' : 'MEMBRE';
+    Actions.missionAddParticipantToList({ idAgent, roleMission: role, ordrePassage: (Actions._missionParticipants || []).length + 1 });
+    sel.value = '';
+    const si = document.getElementById('m-part-search'); if (si) si.value = '';
+  },
+
+  missionAddSelf() {
+    const agent = Auth.currentAgent();
+    if (!agent) return;
+    Actions.missionAddParticipantToList({ idAgent: agent.idAgent, roleMission: 'MEMBRE', ordrePassage: (Actions._missionParticipants || []).length + 1 });
+  },
+
+  renderMissionParticipants() {
+    const list = document.getElementById('m-participants-list'); if (!list) return;
+    const participants = Actions._missionParticipants || [];
+    if (!participants.length) { list.innerHTML = '<div class="text-muted" style="text-align:center;padding:16px">Aucun participant</div>'; return; }
+    list.innerHTML = participants.map(p => {
+      const a = API.getAgent(p.idAgent); if (!a) return '';
+      const dir = API.getDirection(a.idDirection);
+      const init = ((a.prenom||'').charAt(0) + (a.nom||'').charAt(0)).toUpperCase();
+      return `<div style="display:flex;gap:10px;padding:8px;border-bottom:1px solid var(--gray-200);align-items:center">
+        <div class="demandeur-avatar" style="width:36px;height:36px">${Utils.esc(init)}</div>
+        <div style="flex:1"><div style="font-weight:600;color:var(--primary-dark)">${Utils.esc(a.prenom + ' ' + a.nom)}</div><div class="text-muted" style="font-size:11px">${Utils.esc(a.matricule || '')} • ${dir ? Utils.esc(dir.codeDirection) : '—'}</div><div style="font-size:11px;color:#0b3d91;margin-top:4px">📞 ${Utils.esc(a.telephone || '—')}</div></div>
+        <select onchange="Actions.missionChangeParticipantRole(${p.idAgent}, this.value)" style="padding:5px;border-radius:5px;border:1px solid var(--gray-300);font-size:12px"><option value="CHEF_MISSION" ${p.roleMission==='CHEF_MISSION'?'selected':''}>👑 Chef</option><option value="MEMBRE" ${p.roleMission==='MEMBRE'?'selected':''}>👤 Membre</option><option value="CHAUFFEUR" ${p.roleMission==='CHAUFFEUR'?'selected':''}>🚗 Chauffeur</option></select>
+        <button type="button" class="btn btn-sm btn-danger" onclick="Actions.missionRemoveParticipant(${p.idAgent})">×</button>
+      </div>`;
+    }).join('');
+  },
+
+  missionChangeParticipantRole(idAgent, newRole) { const p = (Actions._missionParticipants || []).find(x => x.idAgent === idAgent); if (p) p.roleMission = newRole; },
+  missionRemoveParticipant(idAgent) { Actions._missionParticipants = (Actions._missionParticipants || []).filter(x => x.idAgent !== idAgent); Actions.renderMissionParticipants(); },
+
+  /* ⭐ SAVE MISSION : Crée DIRECTEMENT la validation pour le DIRECTEUR */
+  saveMission(submit = false) {
+    const form = document.getElementById('form-mission');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    const session = Auth.session(); if (!session?.idAgent) return;
+    const dateDepart = document.getElementById('m-date-depart').value;
+    const dateRetour = document.getElementById('m-date-retour').value;
+    if (!dateDepart || !dateRetour || dateRetour <= dateDepart) { Utils.toast('Dates invalides', 'error'); return; }
+    const participants = Actions._missionParticipants || [];
+    if (!participants.length) { Utils.toast('Au moins un participant', 'error'); return; }
+    const payload = {
+      objet: document.getElementById('m-objet').value.trim(),
+      dateEmission: document.getElementById('m-date-emission').value,
+      dateDepart, dateRetour,
+      lieuDepart: document.getElementById('m-lieu-depart').value.trim(),
+      lieuPrincipal: document.getElementById('m-lieu-principal').value.trim(),
+      pays: document.getElementById('m-pays').value.trim() || 'Maroc',
+      budgetPrevisionnel: Number(document.getElementById('m-budget').value) || 0,
+      idDemandeur: session.idAgent,
+      idDirection: Number(document.getElementById('m-direction').value),
+      idWorkflow: API.getWorkflowByCode('WF_STANDARD')?.idWorkflow || 6,
+      participants: participants.map((p, i) => ({ idAgent: p.idAgent, roleMission: p.roleMission, ordrePassage: i + 1, telephone: p.telephone || '—', directionAffectation: p.directionAffectation || '—' })),
+      itineraires: [{ordreEtape: 1, lieuDepart: document.getElementById('m-lieu-depart').value.trim(), lieuArrivee: document.getElementById('m-lieu-principal').value.trim(), dateDepart, dateArrivee: dateRetour, distanceKm: 0, idTransport: 1}],
+      frais: []
+    };
+    try {
+      const mission = API.createMission(payload);
+      if (submit) {
+        API.changerStatut(mission.idMission, 'SOUMIS');
+        const missionDir = mission.idDirection;
+        console.log('🔍 DEBUG - Mission créée, idMission:', mission.idMission, ', idDirection:', missionDir);
+        
+        // ⭐ Chercher un DIRECTEUR dans la même direction que la mission
+        const tousLesDirecteurs = API.getUsers().filter(u => u.role === 'DIRECTEUR' && u.actif !== false && u.idAgent);
+        console.log('🔍 DEBUG - Directeurs disponibles:', tousLesDirecteurs.map(u => ({ login: u.login, idAgent: u.idAgent, idDirection: u.idAgent ? API.getAgent(u.idAgent)?.idDirection : null })));
+        
+        const directeur = tousLesDirecteurs
+          .map(u => ({ user: u, agent: API.getAgent(u.idAgent) }))
+          .find(x => x.agent && x.agent.idDirection === missionDir);
+        
+        if (directeur) {
+          console.log('📤 DEBUG - Création validation pour:', directeur.agent.prenom, directeur.agent.nom, '(idAgent:', directeur.user.idAgent, ')');
+          API.createValidation({
+            idMission: mission.idMission,
+            idValidateur: directeur.user.idAgent,
+            niveau: 1,
+            libelleEtape: 'Directeur → DAAJ',
+            decision: 'EN_ATTENTE'
+          });
+          Utils.toast(`Mission transmise au Directeur ${directeur.agent.prenom} ${directeur.agent.nom}`, 'success', 5000);
+        } else {
+          console.error('❌ DEBUG - Aucun Directeur trouvé pour idDirection:', missionDir);
+          Utils.toast('❌ Aucun Directeur trouvé pour cette direction', 'error', 6000);
+        }
+      } else {
+        Utils.toast('Mission créée (brouillon)', 'success');
+      }
+      App.closeModal(); App.refresh();
+    } catch (err) { Utils.toast(err.message, 'error'); }
+  },
+
+  openAction(idValidation) {
+    const v = API.getValidations().find(x => x.idValidation === idValidation); if (!v) return;
+    const m = API.getMission(v.idMission); if (!m) return;
+    const wf = API.getWorkflow(m.idWorkflow);
+    const demandeur = API.getAgent(m.idDemandeur);
+    const isFinalStep = wf && wf.etapes && v.niveau === wf.etapes.length;
+    const isEtapeSSPA = (v.libelleEtape && v.libelleEtape.toLowerCase().includes('établissement')) || isFinalStep;
+
+    if (isEtapeSSPA) {
+      const vehiculesDispos = API.getVehicules().filter(vh => vh.actif && vh.statut === 'DISPONIBLE');
+      const chauffeurs = API.getAgents().filter(a => a.actif);
+      App.openModal(`
+        <div class="modal-overlay active"><div class="modal" style="max-width:820px">
+          <div class="modal-header"><h3>📋 Établissement OM — ${Utils.esc(m.numeroOm)}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div>
+          <div class="modal-body">
+            <div class="alert alert-info"><strong>Étape ${v.niveau}/${wf?.etapes?.length||'?'}</strong> — ${Utils.esc(v.libelleEtape||'')}<br>⚠️ Sélectionnez un véhicule et un chauffeur.</div>
+            <div class="card" style="background:var(--gray-100);padding:14px;margin-bottom:16px">
+              <div><strong>Objet :</strong> ${Utils.esc(m.objet)}</div>
+              <div><strong>Demandeur :</strong> ${demandeur ? Utils.esc(demandeur.prenom + ' ' + demandeur.nom) : '—'}</div>
+              <div><strong>Période :</strong> ${Utils.formatDate(m.dateDepart)} → ${Utils.formatDate(m.dateRetour)}</div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group full-width"><label>🚗 Véhicule *</label>
+                <input type="text" id="etab-vehicule-search" class="form-control" placeholder="🔍 Rechercher..." style="margin-bottom:6px">
+                <select id="etab-vehicule" class="form-control" required size="6" style="height:auto"><option value="">— Sélectionner —</option>${vehiculesDispos.map(vh => `<option value="${vh.idVehicule}">${Utils.esc(vh.immatriculation)} — ${Utils.esc(vh.marque)} ${Utils.esc(vh.modele)}</option>`).join('')}</select>
+                <small class="text-muted" id="etab-vehicule-count">${vehiculesDispos.length} disponible(s)</small>
+              </div>
+              <div class="form-group full-width"><label>👤 Chauffeur *</label>
+                <input type="text" id="etab-chauffeur-search" class="form-control" placeholder="🔍 Rechercher..." style="margin-bottom:6px">
+                <select id="etab-chauffeur" class="form-control" required size="6" style="height:auto"><option value="">— Sélectionner —</option>${chauffeurs.map(c => `<option value="${c.idAgent}">${Utils.esc(c.prenom)} ${Utils.esc(c.nom)} (${Utils.esc(c.matricule)})</option>`).join('')}</select>
+                <small class="text-muted" id="etab-chauffeur-count">${chauffeurs.length} disponible(s)</small>
+              </div>
+              <div class="form-group full-width"><label>Commentaire</label><textarea id="v-commentaire" class="form-control" rows="2"></textarea></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button>
+            <button class="btn btn-danger" onclick="Actions.deciderValidation(${idValidation}, 'REJETE')">✗ Rejeter</button>
+            <button class="btn btn-success" onclick="Actions.etablirOM(${idValidation})">✓ Établir l'OM</button>
+          </div>
+        </div></div>`);
+      Actions._initRecherche('etab-vehicule-search', 'etab-vehicule', 'etab-vehicule-count', vehiculesDispos.map(vh => ({value: String(vh.idVehicule), label: `${vh.immatriculation} — ${vh.marque} ${vh.modele}`, search: `${vh.immatriculation} ${vh.marque} ${vh.modele} ${vh.carburant||''}`})));
+      Actions._initRecherche('etab-chauffeur-search', 'etab-chauffeur', 'etab-chauffeur-count', chauffeurs.map(c => ({value: String(c.idAgent), label: `${c.prenom} ${c.nom} (${c.matricule})`, search: `${c.prenom} ${c.nom} ${c.matricule} ${c.fonction||''}`})));
+      return;
+    }
+
+    App.openModal(`
+      <div class="modal-overlay active"><div class="modal" style="max-width:820px">
+        <div class="modal-header"><h3>✍️ Traitement — ${Utils.esc(m.numeroOm)}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div>
+        <div class="modal-body">
+          <div class="alert alert-warning"><strong>Étape ${v.niveau}/${wf?.etapes?.length||'?'}</strong> — ${Utils.esc(v.libelleEtape||'')}</div>
+          <div class="card" style="background:var(--gray-100);padding:14px;margin-bottom:16px">
+            <div><strong>Objet :</strong> ${Utils.esc(m.objet)}</div>
+            <div><strong>Demandeur :</strong> ${demandeur ? Utils.esc(demandeur.prenom + ' ' + demandeur.nom) : '—'}</div>
+            <div><strong>Période :</strong> ${Utils.formatDate(m.dateDepart)} → ${Utils.formatDate(m.dateRetour)}</div>
+          </div>
+          ${Actions.workflowViz(m.idMission)}
+          <div class="form-group full-width" style="margin-top:16px"><label>Commentaire</label><textarea id="v-commentaire" class="form-control" rows="3"></textarea></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button>
+          <button class="btn btn-danger" onclick="Actions.deciderValidation(${idValidation}, 'REJETE')">✗ Rejeter</button>
+          <button class="btn btn-success" onclick="Actions.deciderValidation(${idValidation}, 'VALIDE')">✓ Valider</button>
+        </div>
+      </div></div>`);
+  },
+
+  _initRecherche(searchId, selectId, countId, items) {
+    const search = document.getElementById(searchId);
+    const select = document.getElementById(selectId);
+    const count = document.getElementById(countId);
+    if (!search || !select) return;
+    const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    search.addEventListener('input', () => {
+      const q = norm(search.value.trim());
+      const sv = select.value;
+      const filtres = items.filter(o => !q || norm(o.search).includes(q));
+      select.innerHTML = `<option value="">— Sélectionner —</option>` + filtres.map(o => `<option value="${o.value}" ${o.value === sv ? 'selected' : ''}>${Utils.esc(o.label)}</option>`).join('');
+      if (count) count.textContent = `${filtres.length} / ${items.length}`;
+      if (filtres.length === 1 && !sv) select.value = filtres[0].value;
+    });
+  },
+
+  etablirOM(idValidation) {
+    const v = API.getValidations().find(x => x.idValidation === idValidation); if (!v) return;
+    const m = API.getMission(v.idMission); if (!m) return;
+    const idVehicule = document.getElementById('etab-vehicule').value;
+    const idChauffeur = document.getElementById('etab-chauffeur').value;
+    const commentaire = (document.getElementById('v-commentaire')?.value || '').trim();
+    if (!idVehicule || !idChauffeur) { Utils.toast('Sélectionnez véhicule et chauffeur', 'error'); return; }
+    const vehicule = API.getVehicule(Number(idVehicule));
+    const chauffeur = API.getAgent(Number(idChauffeur));
+    if (!vehicule || !chauffeur) { Utils.toast('Introuvable', 'error'); return; }
+    if (!Utils.confirm(`Confirmer OM ${m.numeroOm} ?\n🚗 ${vehicule.immatriculation}\n👤 ${chauffeur.prenom} ${chauffeur.nom}`)) return;
+    try {
+      API.updateVehicule(vehicule.idVehicule, { statut: 'AFFECTE' });
+      const participantsActuels = m.participants || [];
+      const deja = participantsActuels.find(p => p.idAgent === chauffeur.idAgent);
+      const nouveaux = [...participantsActuels];
+      if (!deja) { const dir = API.getDirection(chauffeur.idDirection); nouveaux.push({ idAgent: chauffeur.idAgent, roleMission: 'CHAUFFEUR', ordrePassage: nouveaux.length + 1, telephone: chauffeur.telephone || '—', directionAffectation: dir ? dir.codeDirection : '—' }); }
+      API.updateMission(m.idMission, { participants: nouveaux, idVehicule: vehicule.idVehicule, idChauffeur: chauffeur.idAgent });
+      API.updateValidation(idValidation, {decision: 'VALIDE', commentaire: commentaire || `OM établi — ${vehicule.immatriculation}`, dateDecision: new Date().toISOString()});
+      API.changerStatut(m.idMission, 'OM_ETABLI');
+      Utils.toast('✅ OM établi !', 'success');
+      App.closeModal(); App.refresh();
+      setTimeout(() => { if (Utils.confirm("Imprimer l'OM maintenant ?")) Printer.imprimerOrdreMission(m.idMission); }, 800);
+    } catch (err) { Utils.toast(err.message, 'error'); }
+  },
+
+  deciderValidation(idValidation, decision) {
+    const v = API.getValidations().find(x => x.idValidation === idValidation); if (!v) return;
+    const m = API.getMission(v.idMission); if (!m) return;
+    const wf = API.getWorkflow(m.idWorkflow);
+    const commentaire = (document.getElementById('v-commentaire')?.value || '').trim();
+    if (decision === 'REJETE' && !commentaire) { Utils.toast('Commentaire obligatoire', 'error'); return; }
+    if (!Utils.confirm(`Confirmer : ${decision} ?`)) return;
+    try {
+      API.updateValidation(idValidation, {decision, commentaire: commentaire || null, dateDecision: new Date().toISOString()});
+      if (decision === 'REJETE') { API.changerStatut(m.idMission, 'REJETE'); Utils.toast('Rejeté', 'warning'); }
+      else {
+        const etapes = wf?.etapes || [];
+        const suivant = etapes.find(e => e.niveau === v.niveau + 1);
+        if (suivant) {
+          const validateur = Actions._trouverValidateurPourRole(suivant.roleRequis, m);
+          if (validateur) {
+            API.createValidation({idMission: m.idMission, idValidateur: validateur.idAgent, niveau: suivant.niveau, libelleEtape: suivant.libelle, decision: 'EN_ATTENTE'});
+            if (v.niveau === 1) API.changerStatut(m.idMission, 'VALIDE_N1');
+            else if (v.niveau === 2) API.changerStatut(m.idMission, 'VALIDE_N2');
+            else if (v.niveau === 3) API.changerStatut(m.idMission, 'TRANSMIS_SSPA');
+            Utils.toast('Validé — transmis', 'success');
+          } else { API.changerStatut(m.idMission, 'VALIDE'); Utils.toast('Validé', 'warning'); }
+        } else { API.changerStatut(m.idMission, 'OM_ETABLI'); Utils.toast('OM établi ✓', 'success'); }
+      }
+      App.closeModal(); App.refresh();
+    } catch (err) { Utils.toast(err.message, 'error'); }
+  },
+
+  _trouverValidateurPourRole(roleRequis, mission) {
+    const users = API.getUsers();
+    const candidats = users.filter(u => u.role === roleRequis && u.actif !== false && u.idAgent);
+    if (!candidats.length) return null;
+    if (roleRequis === 'DIRECTEUR' || roleRequis === 'RELAIS') {
+      const dansDir = candidats.find(u => { const a = API.getAgent(u.idAgent); return a && a.idDirection === mission.idDirection; });
+      const choisi = dansDir || candidats[0];
+      return {idAgent: choisi.idAgent, user: choisi};
+    }
+    return {idAgent: candidats[0].idAgent, user: candidats[0]};
+  },
+
+  renderVehicules() {
+    const tbody = document.getElementById('vehicules-tbody'); if (!tbody) return;
+    const fStatut = document.getElementById('filter-veh-statut')?.value || '';
+    const fDir = document.getElementById('filter-veh-direction')?.value || '';
+    const fSearch = (document.getElementById('filter-veh-search')?.value || '').trim().toLowerCase();
+    const session = Auth.session();
+    let list = Scope.demandesVehicules();
+    if (fStatut) list = list.filter(d => d.statut === fStatut);
+    if (fDir) list = list.filter(d => d.idDirection == fDir);
+    if (fSearch) list = list.filter(d => { const dem = API.getAgent(d.idDemandeur); const n = dem ? `${dem.prenom} ${dem.nom}` : ''; return (d.numeroDemande||'').toLowerCase().includes(fSearch) || (d.objet||'').toLowerCase().includes(fSearch) || n.toLowerCase().includes(fSearch); });
+    list.sort((a,b) => (b.dateCreation||'').localeCompare(a.dateCreation||''));
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted" style="padding:30px">Aucune demande</td></tr>'; return; }
+    const canValidate = ['ADMIN','DAF','DAAJ','SSPA','DIRECTEUR','CHEF_SERVICE'].includes(session?.role);
+    const canAssign = ['ADMIN','DAAJ','SSPA'].includes(session?.role);
+    tbody.innerHTML = list.map(d => {
+      const isOwner = session?.idAgent === d.idDemandeur;
+      const arrDests = Array.isArray(d.destinations) && d.destinations.length ? d.destinations : (d.destination ? [d.destination] : []);
+      const personnes = Utils.personnesList(d);
+      const permModif = Actions.peutModifierDemande(d);
+      return `<tr><td><strong>${Utils.esc(d.numeroDemande)}</strong></td><td>${Utils.esc((d.objet||'').substring(0,40))}</td><td>${Utils.demandeurCell(d.idDemandeur)}</td><td>${arrDests.length ? Utils.esc(arrDests.join(' → ')) : '—'}</td><td>${Utils.formatDate(d.dateDepart)}</td><td>${Utils.formatDate(d.dateRetour)}</td><td style="text-align:center">${personnes.length} 👤</td><td>${Utils.badgeStatutVehicule(d.statut)}</td><td style="text-align:center">${(d.statut === 'AFFECTE' || d.statut === 'TERMINE') && d.idVehicule ? `<button class="vh-icon-btn" onclick="Printer.imprimerBonVehicule(${d.idDemande})"></button>` : '—'}</td><td><div class="actions-cell"><button class="btn btn-sm btn-outline" onclick="Actions.detailDemandeVehicule(${d.idDemande})">Voir</button>${permModif.ok ? `<button class="btn btn-sm btn-outline" onclick="Actions.openDemandeVehiculeModal(${d.idDemande})">✏️</button>` : ''}${d.statut === 'BROUILLON' && (isOwner || canAssign) ? `<button class="btn btn-sm btn-success" onclick="Actions.soumettreDemandeVehicule(${d.idDemande})">Soumettre</button>` : ''}${d.statut === 'SOUMIS' && canValidate ? `<button class="btn btn-sm btn-success" onclick="Actions.validerDemandeVehicule(${d.idDemande})">Valider</button><button class="btn btn-sm btn-danger" onclick="Actions.refuserDemandeVehicule(${d.idDemande})">Refuser</button>` : ''}${(d.statut === 'SOUMIS' || d.statut === 'VALIDE') && canAssign ? `<button class="btn btn-sm btn-warning" onclick="Actions.affecterVehicule(${d.idDemande})">Affecter</button>` : ''}${d.statut === 'AFFECTE' && canAssign ? `<button class="btn btn-sm btn-info" onclick="Actions.terminerDemandeVehicule(${d.idDemande})">Terminer</button>` : ''}</div></td></tr>`;
+    }).join('');
+  },
+
+  nouvelleDemandeVehicule() { Actions.openDemandeVehiculeModal(null); },
+
+  openDemandeVehiculeModal(id) {
+    const isEdit = !!id;
+    const d = isEdit ? API.getDemandeVehicule(id) : null;
+    if (isEdit && !d) { Utils.toast('Introuvable', 'error'); return; }
+    const allDestSuggestions = API.getDestinations().filter(x => x.actif !== false).map(x => x.libelle);
+    const agents = API.getAgents().filter(a => a.actif);
+    const agentNoms = agents.map(a => `${a.prenom} ${a.nom}`);
+    const personnesPrec = [];
+    API.getDemandesVehicules().forEach(dd => { Utils.personnesList(dd).forEach(p => { if (!personnesPrec.includes(p)) personnesPrec.push(p); }); });
+    const allPersonnesSuggestions = [...new Set([...agentNoms, ...personnesPrec])].sort();
+    const initialDests = isEdit ? (Array.isArray(d.destinations) && d.destinations.length ? d.destinations.slice() : (d.destination ? [d.destination] : [''])) : [''];
+    const initialPersonnes = isEdit ? Utils.personnesList(d).slice() : [''];
+    if (!initialPersonnes.length) initialPersonnes.push('');
+    const valObjets = API.getValeursDistinctesDemandesVehicules('objet');
+    const valMotifs = API.getValeursDistinctesDemandesVehicules('motif');
+    const demandeurInfo = isEdit ? Utils.demandeurHighlight(d.idDemandeur, 'Demandeur') : '';
+    App.openModal(`
+      <div class="modal-overlay active"><div class="modal" style="max-width:820px">
+        <div class="modal-header"><h3>${isEdit ? `✏️ Modifier ${Utils.esc(d.numeroDemande)}` : '➕ Nouvelle demande de véhicule'}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div>
+        <div class="modal-body">
+          ${demandeurInfo}
+          <div class="alert alert-info" style="margin-bottom:14px">💡 Cliquez sur <strong>+</strong> pour ajouter une valeur.</div>
+          ${Utils.datalist('dl-dv-destinations', allDestSuggestions)}
+          ${Utils.datalist('dl-dv-personnes', allPersonnesSuggestions)}
+          ${Utils.datalist('dl-dv-objets', valObjets)}
+          ${Utils.datalist('dl-dv-motifs', valMotifs)}
+          <form id="form-demande-vehicule">
+            <input type="hidden" id="dv-id" value="${isEdit ? d.idDemande : ''}">
+            <div class="form-grid">
+              <div class="form-group full-width"><label>Objet *</label>${Utils.inputWithPlus('dv-objet', 'dl-dv-objets', 'Saisir...', isEdit ? d.objet : '', true)}</div>
+              <div class="form-group full-width"><label>Motif *</label>${Utils.inputWithPlus('dv-motif', 'dl-dv-motifs', 'Saisir...', isEdit ? d.motif : '', true)}</div>
+              <div class="form-group full-width"><label>Destinations *</label>
+                <div id="dv-destinations-list">${initialDests.map(v => `<div class="dv-dest-row"><input type="text" class="form-control dv-dest-input" list="dl-dv-destinations" value="${Utils.esc(v)}" placeholder="Saisir..."><button type="button" class="btn btn-success" onclick="Actions.dvAddDestinationFromInput(this)">+</button><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button></div>`).join('')}</div>
+                <button type="button" class="btn btn-sm btn-outline mt-2" onclick="Actions.dvAddDestinationRow('')">+ Ajouter une destination</button>
+              </div>
+              <div class="form-group full-width"><label>Personnes transportées *</label>
+                <div id="dv-personnes-list">${initialPersonnes.map(v => `<div class="dv-pers-row"><input type="text" class="form-control dv-pers-input" list="dl-dv-personnes" value="${Utils.esc(v)}" placeholder="Saisir..."><button type="button" class="btn btn-success" onclick="Actions.dvAddPersonneFromInput(this)">+</button><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button></div>`).join('')}</div>
+                <button type="button" class="btn btn-sm btn-outline mt-2" onclick="Actions.dvAddPersonneRow('')">+ Ajouter une personne</button>
+              </div>
+              <div class="form-group"><label>Départ *</label><input type="datetime-local" id="dv-date-depart" class="form-control" required value="${isEdit ? Utils.toLocalInput(d.dateDepart) : ''}"></div>
+              <div class="form-group"><label>Retour *</label><input type="datetime-local" id="dv-date-retour" class="form-control" required value="${isEdit ? Utils.toLocalInput(d.dateRetour) : ''}"></div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn btn-success" onclick="Actions.saveDemandeVehicule(true)">Enregistrer &amp; Soumettre</button></div>
+      </div></div>`);
+  },
+
+  dvAddDestinationFromInput(btn) {
+    const input = btn.parentElement.querySelector('.dv-dest-input'); if (!input) return;
+    const valeur = prompt('Nouvelle destination :', input.value || '');
+    if (!valeur || !valeur.trim()) return;
+    const v = valeur.trim();
+    const datalist = document.getElementById('dl-dv-destinations');
+    if (datalist && !Array.from(datalist.options).find(opt => opt.value.toLowerCase() === v.toLowerCase())) {
+      const option = document.createElement('option'); option.value = v; datalist.appendChild(option);
+    }
+    input.value = v;
+    try { Utils._creerDestination(v); Utils.toast(`"${v}" ajouté`, 'success', 2000); } catch (e) { Utils.toast('Erreur : ' + e.message, 'error'); }
+  },
+  dvAddPersonneFromInput(btn) {
+    const input = btn.parentElement.querySelector('.dv-pers-input'); if (!input) return;
+    const valeur = prompt('Nom de la personne :', input.value || '');
+    if (!valeur || !valeur.trim()) return;
+    const v = valeur.trim();
+    const datalist = document.getElementById('dl-dv-personnes');
+    if (datalist && !Array.from(datalist.options).find(opt => opt.value.toLowerCase() === v.toLowerCase())) {
+      const option = document.createElement('option'); option.value = v; datalist.appendChild(option);
+    }
+    input.value = v;
+    Utils.toast(`"${v}" ajouté`, 'success', 2000);
+  },
+  dvAddDestinationRow(value) {
+    const list = document.getElementById('dv-destinations-list'); if (!list) return;
+    const row = document.createElement('div'); row.className = 'dv-dest-row';
+    row.innerHTML = `<input type="text" class="form-control dv-dest-input" list="dl-dv-destinations" value="${Utils.esc(value || '')}" placeholder="Saisir..."><button type="button" class="btn btn-success" onclick="Actions.dvAddDestinationFromInput(this)">+</button><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button>`;
+    list.appendChild(row);
+  },
+  dvAddPersonneRow(value) {
+    const list = document.getElementById('dv-personnes-list'); if (!list) return;
+    const row = document.createElement('div'); row.className = 'dv-pers-row';
+    row.innerHTML = `<input type="text" class="form-control dv-pers-input" list="dl-dv-personnes" value="${Utils.esc(value || '')}" placeholder="Saisir..."><button type="button" class="btn btn-success" onclick="Actions.dvAddPersonneFromInput(this)">+</button><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button>`;
+    list.appendChild(row);
+  },
+  dvGetDestinations() { return Array.from(document.querySelectorAll('#dv-destinations-list .dv-dest-input')).map(i => i.value.trim()).filter(v => v); },
+  dvGetPersonnes() { return Array.from(document.querySelectorAll('#dv-personnes-list .dv-pers-input')).map(i => i.value.trim()).filter(v => v); },
+
+  saveDemandeVehicule(submit = false) {
+    const form = document.getElementById('form-demande-vehicule');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    const id = document.getElementById('dv-id').value;
+    const isEdit = !!id;
+    const session = Auth.session();
+    const agent = Auth.currentAgent();
+    const dtDep = document.getElementById('dv-date-depart').value;
+    const dtRet = document.getElementById('dv-date-retour').value;
+    if (!dtDep || !dtRet || dtRet <= dtDep) { Utils.toast('Dates invalides', 'error'); return; }
+    const dests = Actions.dvGetDestinations();
+    if (!dests.length) { Utils.toast('Au moins une destination', 'error'); return; }
+    const personnes = Actions.dvGetPersonnes();
+    if (!personnes.length) { Utils.toast('Au moins une personne', 'error'); return; }
+    const payload = { objet: document.getElementById('dv-objet').value.trim(), motif: document.getElementById('dv-motif').value.trim(), destination: dests[0], destinations: dests, personnesTransportees: personnes, nbPassagers: personnes.length, dateDepart: dtDep, dateRetour: dtRet };
+    try {
+      if (isEdit) { if (submit) { payload.statut = 'SOUMIS'; payload.dateSoumission = new Date().toISOString(); } API.updateDemandeVehicule(Number(id), payload); }
+      else { payload.idDemandeur = session?.idAgent; payload.idCreateur = session?.idAgent; payload.idDirection = agent?.idDirection || 1; payload.dateCreation = new Date().toISOString(); payload.statut = submit ? 'SOUMIS' : 'BROUILLON'; if (submit) payload.dateSoumission = new Date().toISOString(); API.createDemandeVehicule(payload); }
+      Utils.toast(submit ? 'Demande soumise' : 'Demande enregistrée', 'success');
+      App.closeModal(); App.refresh();
+    } catch (err) { Utils.toast(err.message, 'error'); }
+  },
+  soumettreDemandeVehicule(id) { if (!Utils.confirm('Soumettre ?')) return; API.updateDemandeVehicule(id, {statut:'SOUMIS', dateSoumission: new Date().toISOString()}); Utils.toast('Soumise', 'success'); App.refresh(); },
+  validerDemandeVehicule(id) { API.updateDemandeVehicule(id, {statut:'VALIDE', dateValidation: new Date().toISOString()}); Utils.toast('Validée ✓', 'success'); App.refresh(); },
+  refuserDemandeVehicule(id) { const m = window.prompt('Motif :', ''); if (!m || !m.trim()) return; API.updateDemandeVehicule(id, {statut:'REFUSE', commentaireValidateur: m.trim(), dateValidation: new Date().toISOString()}); Utils.toast('Refusée', 'warning'); App.refresh(); },
+
+  affecterVehicule(id) {
+    const d = API.getDemandeVehicule(id); if (!d) return;
+    const vehiculesDispos = API.getVehicules().filter(v => v.actif && (v.statut === 'DISPONIBLE' || v.idVehicule === d.idVehicule));
+    const chauffeurs = API.getAgents().filter(a => a.actif);
+    const demandeur = API.getAgent(d.idDemandeur);
+    App.openModal(`
+      <div class="modal-overlay active"><div class="modal" style="max-width:680px">
+        <div class="modal-header"><h3>🚗 Affecter — ${Utils.esc(d.numeroDemande)}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div>
+        <div class="modal-body">
+          <div class="alert alert-info"><strong>${Utils.esc(d.objet)}</strong><br><strong>Demandeur :</strong> ${demandeur ? Utils.esc(demandeur.prenom + ' ' + demandeur.nom) : '—'}</div>
+          <div class="form-grid">
+            <div class="form-group full-width"><label>🚗 Véhicule *</label>
+              <input type="text" id="aff-vehicule-search" class="form-control" placeholder="🔍 Rechercher..." style="margin-bottom:6px">
+              <select id="aff-vehicule" class="form-control" required size="6" style="height:auto"><option value="">— Sélectionner —</option>${vehiculesDispos.map(v => `<option value="${v.idVehicule}" ${d.idVehicule === v.idVehicule ? 'selected' : ''}>${Utils.esc(v.immatriculation)} — ${Utils.esc(v.marque + ' ' + v.modele)}</option>`).join('')}</select>
+              <small class="text-muted" id="aff-vehicule-count">${vehiculesDispos.length} véhicule(s)</small>
+            </div>
+            <div class="form-group full-width"><label>👤 Chauffeur</label>
+              <input type="text" id="aff-chauffeur-search" class="form-control" placeholder="🔍 Rechercher..." style="margin-bottom:6px">
+              <select id="aff-chauffeur" class="form-control" size="6" style="height:auto"><option value="">— Aucun —</option>${chauffeurs.map(c => `<option value="${c.idAgent}" ${d.idChauffeur === c.idAgent ? 'selected' : ''}>${Utils.esc(c.prenom + ' ' + c.nom)}</option>`).join('')}</select>
+              <small class="text-muted" id="aff-chauffeur-count">${chauffeurs.length} chauffeur(s)</small>
+            </div>
+            <div class="form-group full-width"><label>Commentaire</label><textarea id="aff-commentaire" class="form-control" rows="2">${Utils.esc(d.commentaireValidateur||'')}</textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn btn-success" onclick="Actions.confirmAffectation(${id})">Affecter</button></div>
+      </div></div>`);
+    Actions._initRecherche('aff-vehicule-search', 'aff-vehicule', 'aff-vehicule-count', vehiculesDispos.map(v => ({value: String(v.idVehicule), label: `${v.immatriculation} — ${v.marque} ${v.modele}`, search: `${v.immatriculation} ${v.marque} ${v.modele} ${v.carburant||''}`})));
+    Actions._initRecherche('aff-chauffeur-search', 'aff-chauffeur', 'aff-chauffeur-count', chauffeurs.map(c => ({value: String(c.idAgent), label: `${c.prenom} ${c.nom}`, search: `${c.prenom} ${c.nom} ${c.matricule||''}`})));
+  },
+  confirmAffectation(id) {
+    const idVehicule = document.getElementById('aff-vehicule').value;
+    if (!idVehicule) { Utils.toast('Sélectionnez un véhicule', 'error'); return; }
+    const idChauffeur = document.getElementById('aff-chauffeur').value || null;
+    const commentaire = document.getElementById('aff-commentaire').value.trim();
+    const vehicule = API.getVehicule(Number(idVehicule));
+    if (!vehicule) { Utils.toast('Introuvable', 'error'); return; }
+    API.updateVehicule(vehicule.idVehicule, {statut: 'AFFECTE'});
+    API.updateDemandeVehicule(id, {idVehicule: vehicule.idVehicule, idChauffeur: idChauffeur ? Number(idChauffeur) : null, statut: 'AFFECTE', commentaireValidateur: commentaire || `Véhicule affecté : ${vehicule.immatriculation}`, dateAffectation: new Date().toISOString()});
+    Utils.toast('Véhicule affecté ✓', 'success');
+    App.closeModal(); App.refresh();
+  },
+  terminerDemandeVehicule(id) {
+    if (!Utils.confirm('Terminer ?')) return;
+    const d = API.getDemandeVehicule(id); if (!d) return;
+    if (d.idVehicule) API.updateVehicule(d.idVehicule, {statut: 'DISPONIBLE'});
+    API.updateDemandeVehicule(id, {statut:'TERMINE', dateFin: new Date().toISOString()});
+    Utils.toast('Terminée', 'success'); App.refresh();
+  },
+  detailDemandeVehicule(id) {
+    const d = API.getDemandeVehicule(id); if (!d) return;
+    const demandeur = API.getAgent(d.idDemandeur);
+    const arrDests = Array.isArray(d.destinations) && d.destinations.length ? d.destinations : (d.destination ? [d.destination] : []);
+    const personnes = Utils.personnesList(d);
+    const vehicule = d.idVehicule ? API.getVehicule(d.idVehicule) : null;
+    const chauffeur = d.idChauffeur ? API.getAgent(d.idChauffeur) : null;
+    const permModif = Actions.peutModifierDemande(d);
+    App.openModal(`
+      <div class="modal-overlay active"><div class="modal">
+        <div class="modal-header"><h3>Détail ${Utils.esc(d.numeroDemande)}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div>
+        <div class="modal-body">
+          <div class="flex-between" style="margin-bottom:16px"><h3>${Utils.esc(d.numeroDemande)}</h3>${Utils.badgeStatutVehicule(d.statut)}</div>
+          ${Utils.demandeurHighlight(d.idDemandeur, 'Demandeur')}
+          <div class="form-grid">
+            <div><strong>Départ :</strong><br>${Utils.formatDate(d.dateDepart)}</div>
+            <div><strong>Retour :</strong><br>${Utils.formatDate(d.dateRetour)}</div>
+            <div><strong>Véhicule :</strong><br>${vehicule ? Utils.esc(vehicule.immatriculation) : 'Non affecté'}</div>
+            <div><strong>Chauffeur :</strong><br>${chauffeur ? Utils.esc(chauffeur.prenom + ' ' + chauffeur.nom) : 'Non désigné'}</div>
+            <div style="grid-column:1/-1"><strong>Destinations :</strong><br>${Utils.esc(arrDests.join(' → '))}</div>
+            <div style="grid-column:1/-1"><strong>Personnes (${personnes.length}) :</strong><br>${Utils.esc(personnes.join(' • '))}</div>
+          </div>
+          <h4 style="margin-top:20px">Objet</h4><p>${Utils.esc(d.objet||'—')}</p>
+          <h4>Motif</h4><p>${Utils.esc(d.motif||'—')}</p>
+        </div>
+        <div class="modal-footer">
+          ${permModif.ok ? `<button class="btn btn-outline" onclick="App.closeModal();setTimeout(()=>Actions.openDemandeVehiculeModal(${d.idDemande}),50)">✏️ Modifier</button>` : ''}
+          ${(d.statut === 'AFFECTE' || d.statut === 'TERMINE') && d.idVehicule ? `<button class="btn btn-info" onclick="Printer.imprimerBonVehicule(${d.idDemande})">🖨️ Bon</button>` : ''}
+          <button class="btn btn-secondary" onclick="App.closeModal()">Fermer</button>
+        </div>
+      </div></div>`);
+  },
+  peutModifierDemande(d) {
+    const s = Auth.session(); if (!s || !d) return {ok:false};
+    const isOwner = s.idAgent != null && s.idAgent === d.idDemandeur;
+    const isAdmin = s.role === 'ADMIN';
+    const isGlobal = ['ADMIN','DAF','DAAJ','SSPA','DIRECTEUR'].includes(s.role);
+    if (d.statut === 'BROUILLON' && (isOwner || isAdmin || isGlobal)) return {ok:true};
+    if (d.statut === 'SOUMIS' && (isOwner || isAdmin || s.role === 'DIRECTEUR')) return {ok:true};
+    if (d.statut === 'REFUSE' && (isAdmin || isOwner)) return {ok:true};
+    return {ok:false};
+  },
+
+  renderParcAuto() {
+    const tbody = document.getElementById('parc-auto-tbody'); if (!tbody) return;
+    const q = (document.getElementById('filter-parc-auto')?.value || '').trim().toLowerCase();
+    const fStatut = document.getElementById('filter-parc-auto-statut')?.value || '';
+    const fDir = document.getElementById('filter-parc-auto-direction')?.value || '';
+    let list = Scope.vehiculesParc();
+    if (fStatut) list = list.filter(v => v.statut === fStatut);
+    if (fDir) list = list.filter(v => v.idDirection == fDir);
+    if (q) list = list.filter(v => [v.immatriculation, v.marque, v.modele, v.utilisateur].some(val => (val||'').toLowerCase().includes(q)));
+    list.sort((a,b) => (a.immatriculation||'').localeCompare(b.immatriculation||''));
+    const counter = document.getElementById('parc-auto-count'); if (counter) counter.textContent = `${list.length} véhicule(s)`;
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:30px">Aucun</td></tr>'; return; }
+    tbody.innerHTML = list.map(v => {
+      const dir = API.getDirection(v.idDirection);
+      const statutClass = v.statut === 'DISPONIBLE' ? 'badge-VALIDE' : v.statut === 'AFFECTE' ? 'badge-AFFECTE' : v.statut === 'MAINTENANCE' ? 'badge-MAINTENANCE' : 'badge-HORS_SERVICE';
+      return `<tr><td><strong>${Utils.esc(v.immatriculation)}</strong></td><td>${Utils.esc(v.marque)}</td><td>${Utils.esc(v.modele)}</td><td>${Utils.esc(v.type||'—')}</td><td>${Utils.esc(v.carburant||'—')}</td><td>${dir ? Utils.esc(dir.codeDirection) : '—'}</td><td>${Utils.esc(v.utilisateur||'—')}</td><td><span class="badge ${statutClass}">${Utils.esc(v.statut || '—')}</span></td><td><div class="actions-cell"><button class="btn btn-sm btn-outline" onclick="Actions.openVehiculeModal(${v.idVehicule})">Modifier</button><button class="btn btn-sm btn-danger" onclick="Actions.supprimerVehicule(${v.idVehicule})">Suppr.</button></div></td></tr>`;
+    }).join('');
+  },
+  openVehiculeModal(id) {
+    const isEdit = !!id;
+    const v = isEdit ? API.getVehicule(id) : null;
+    if (isEdit && !v) return;
+    const directions = Scope.directions();
+    App.openModal(`
+      <div class="modal-overlay active"><div class="modal modal-wide">
+        <div class="modal-header"><h3>${isEdit ? 'Modifier véhicule' : 'Nouveau véhicule'}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div>
+        <div class="modal-body"><form id="form-vehicule">
+          <input type="hidden" id="v-id" value="${isEdit ? v.idVehicule : ''}">
+          <div class="form-grid">
+            <div class="form-group"><label>Matricule *</label><input type="text" id="v-immatriculation" class="form-control" required value="${v ? Utils.esc(v.immatriculation) : ''}"></div>
+            <div class="form-group"><label>Marque *</label><input type="text" id="v-marque" class="form-control" required value="${v ? Utils.esc(v.marque) : ''}"></div>
+            <div class="form-group"><label>Modèle *</label><input type="text" id="v-modele" class="form-control" required value="${v ? Utils.esc(v.modele) : ''}"></div>
+            <div class="form-group"><label>Type</label><input type="text" id="v-type" class="form-control" value="${v ? Utils.esc(v.type||'') : ''}"></div>
+            <div class="form-group"><label>Carburant</label><input type="text" id="v-carburant" class="form-control" value="${v ? Utils.esc(v.carburant||'') : ''}"></div>
+            <div class="form-group"><label>Direction</label><select id="v-direction" class="form-control"><option value="">—</option>${directions.map(d => `<option value="${d.idDirection}" ${v && v.idDirection === d.idDirection ? 'selected' : ''}>${Utils.esc(d.codeDirection)}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Utilisateur</label><input type="text" id="v-utilisateur" class="form-control" value="${v ? Utils.esc(v.utilisateur||'') : ''}"></div>
+            <div class="form-group"><label>Capacité</label><input type="number" id="v-capacite" class="form-control" min="1" value="${v ? (v.capacite||5) : 5}"></div>
+            <div class="form-group"><label>Statut</label><select id="v-statut" class="form-control"><option value="DISPONIBLE" ${v && v.statut === 'DISPONIBLE' ? 'selected' : ''}>Disponible</option><option value="AFFECTE" ${v && v.statut === 'AFFECTE' ? 'selected' : ''}>Affecté</option><option value="MAINTENANCE" ${v && v.statut === 'MAINTENANCE' ? 'selected' : ''}>Maintenance</option><option value="HORS_SERVICE" ${v && v.statut === 'HORS_SERVICE' ? 'selected' : ''}>Hors service</option></select></div>
+          </div>
+        </form></div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn" onclick="Actions.saveVehicule()">Enregistrer</button></div>
+      </div></div>`);
+  },
+  saveVehicule() {
+    const form = document.getElementById('form-vehicule');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    const id = document.getElementById('v-id').value;
+    const payload = { immatriculation: document.getElementById('v-immatriculation').value.trim(), marque: document.getElementById('v-marque').value.trim(), modele: document.getElementById('v-modele').value.trim(), type: document.getElementById('v-type').value.trim(), carburant: document.getElementById('v-carburant').value.trim(), idDirection: document.getElementById('v-direction').value ? Number(document.getElementById('v-direction').value) : null, utilisateur: document.getElementById('v-utilisateur').value.trim(), capacite: Number(document.getElementById('v-capacite').value || 5), statut: document.getElementById('v-statut').value, actif: true };
+    try { if (id) API.updateVehicule(Number(id), payload); else API.createVehicule(payload); Utils.toast(id ? 'Modifié' : 'Créé', 'success'); App.closeModal(); App.refresh(); } catch (err) { Utils.toast(err.message, 'error'); }
+  },
+  supprimerVehicule(id) { if (!Utils.confirm('Supprimer ?')) return; try { API.deleteVehicule(id); Utils.toast('Supprimé', 'success'); App.refresh(); } catch (e) { Utils.toast(e.message, 'error'); } },
+
+  getAgentsFiltres() {
+    const q = (document.getElementById('filter-agent')?.value || '').trim().toLowerCase();
+    const fDir = document.getElementById('filter-agent-direction')?.value || '';
+    const fStatut = document.getElementById('filter-agent-statut')?.value || '';
+    let list = Scope.agents();
+    if (fDir) list = list.filter(a => a.idDirection == fDir);
+    if (fStatut === 'actif') list = list.filter(a => a.actif);
+    if (fStatut === 'inactif') list = list.filter(a => !a.actif);
+    if (q) list = list.filter(a => [a.nom, a.prenom, a.matricule, a.email, a.fonction].some(v => (v||'').toLowerCase().includes(q)));
+    return list.slice().sort((a,b) => (a.nom||'').localeCompare(b.nom||''));
+  },
+  renderAgents() {
+    const tbody = document.getElementById('agents-tbody'); if (!tbody) return;
+    const list = Actions.getAgentsFiltres();
+    const counter = document.getElementById('agents-count'); if (counter) counter.textContent = `${list.length} agent(s)`;
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Aucun</td></tr>'; return; }
+    tbody.innerHTML = list.map(a => {
+      const dir = API.getDirection(a.idDirection);
+      return `<tr><td><strong>${Utils.esc(a.matricule)}</strong></td><td>${Utils.esc(a.prenom)} ${Utils.esc(a.nom)}</td><td>${Utils.esc(a.fonction)}</td><td>${Utils.formatMoney(a.taux || 0)}</td><td>${dir ? Utils.esc(dir.codeDirection) : '—'}</td><td>${Utils.esc(a.email)}</td><td>${Utils.esc(a.telephone || '—')}</td><td>${a.actif ? '<span class="badge badge-VALIDE">Actif</span>' : '<span class="badge badge-ANNULE">Inactif</span>'}</td><td><div class="actions-cell"><button class="btn btn-sm btn-outline" onclick="Actions.openAgentModal(${a.idAgent})">Modifier</button><button class="btn btn-sm btn-danger" onclick="Actions.supprimerAgent(${a.idAgent})">Suppr.</button></div></td></tr>`;
+    }).join('');
+  },
+  nouvelAgent() { Actions.openAgentModal(null); },
+  openAgentModal(id) {
+    const isEdit = !!id;
+    const a = isEdit ? API.getAgent(id) : null;
+    App.openModal(`
+      <div class="modal-overlay active"><div class="modal">
+        <div class="modal-header"><h3>${isEdit ? 'Modifier' : 'Nouvel agent'}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div>
+        <div class="modal-body"><form id="form-agent">
+          <input type="hidden" id="a-id" value="${isEdit ? a.idAgent : ''}">
+          <div class="form-grid">
+            <div class="form-group"><label>Nom *</label><input type="text" id="a-nom" class="form-control" required value="${a ? Utils.esc(a.nom) : ''}"></div>
+            <div class="form-group"><label>Prénom *</label><input type="text" id="a-prenom" class="form-control" required value="${a ? Utils.esc(a.prenom) : ''}"></div>
+            <div class="form-group"><label>Matricule</label><input type="text" id="a-matricule" class="form-control" value="${a ? Utils.esc(a.matricule) : ''}"></div>
+            <div class="form-group"><label>Email *</label><input type="email" id="a-email" class="form-control" required value="${a ? Utils.esc(a.email) : ''}"></div>
+            <div class="form-group"><label>Téléphone</label><input type="text" id="a-telephone" class="form-control" value="${a ? Utils.esc(a.telephone||'') : ''}"></div>
+            <div class="form-group"><label>Fonction *</label><input type="text" id="a-fonction" class="form-control" required value="${a ? Utils.esc(a.fonction) : ''}"></div>
+            <div class="form-group"><label>Taux</label><input type="number" id="a-taux" class="form-control" value="${a ? (a.taux||0) : 0}"></div>
+            <div class="form-group"><label>Direction *</label><select id="a-direction" class="form-control" required>${Scope.directions().map(d => `<option value="${d.idDirection}" ${a && a.idDirection === d.idDirection ? 'selected' : ''}>${Utils.esc(d.codeDirection)}</option>`).join('')}</select></div>
+          </div>
+        </form></div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn" onclick="Actions.saveAgent()">Enregistrer</button></div>
+      </div></div>`);
+  },
+  saveAgent() {
+    const form = document.getElementById('form-agent');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    const id = document.getElementById('a-id').value;
+    const payload = { nom: document.getElementById('a-nom').value.trim().toUpperCase(), prenom: document.getElementById('a-prenom').value.trim(), matricule: document.getElementById('a-matricule').value.trim() || null, email: document.getElementById('a-email').value.trim(), telephone: document.getElementById('a-telephone').value.trim(), fonction: document.getElementById('a-fonction').value.trim(), taux: Number(document.getElementById('a-taux').value || 0), idDirection: Number(document.getElementById('a-direction').value), actif: true };
+    try { if (id) API.updateAgent(Number(id), payload); else API.createAgent(payload); Utils.toast(id ? 'Modifié' : 'Créé', 'success'); App.closeModal(); App.refresh(); } catch (err) { Utils.toast(err.message, 'error'); }
+  },
+  supprimerAgent(id) { if (!Utils.confirm('Supprimer ?')) return; try { API.deleteAgent(id); Utils.toast('Supprimé', 'success'); App.refresh(); } catch (e) { Utils.toast(e.message, 'error'); } },
+
+  renderDirections() {
+    const tbody = document.getElementById('directions-tbody'); if (!tbody) return;
+    const q = (document.getElementById('filter-direction')?.value || '').trim().toLowerCase();
+    let list = Scope.directions();
+    if (q) list = list.filter(d => [d.codeDirection, d.libelle].some(v => (v||'').toLowerCase().includes(q)));
+    list.sort((a,b) => a.codeDirection.localeCompare(b.codeDirection));
+    tbody.innerHTML = list.map(d => `<tr><td><strong>${Utils.esc(d.codeDirection)}</strong></td><td>${Utils.esc(d.libelle)}</td><td>${API.getAgents().filter(a => a.idDirection === d.idDirection).length}</td><td>${d.actif ? 'Active' : 'Inactive'}</td><td><div class="actions-cell"><button class="btn btn-sm btn-outline" onclick="Actions.openDirectionModal(${d.idDirection})">Modifier</button><button class="btn btn-sm btn-danger" onclick="Actions.supprimerDirection(${d.idDirection})">Suppr.</button></div></td></tr>`).join('');
+  },
+  nouvelleDirection() { Actions.openDirectionModal(null); },
+  openDirectionModal(id) {
+    const isEdit = !!id;
+    const d = isEdit ? API.getDirection(id) : null;
+    App.openModal(`<div class="modal-overlay active"><div class="modal" style="max-width:600px"><div class="modal-header"><h3>${isEdit ? 'Modifier' : 'Nouvelle direction'}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div><div class="modal-body"><form id="form-direction"><input type="hidden" id="d-id" value="${isEdit ? d.idDirection : ''}"><div class="form-grid"><div class="form-group"><label>Code *</label><input type="text" id="d-code" class="form-control" required value="${d ? Utils.esc(d.codeDirection) : ''}"></div><div class="form-group"><label>Libellé *</label><input type="text" id="d-libelle" class="form-control" required value="${d ? Utils.esc(d.libelle) : ''}"></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn" onclick="Actions.saveDirection()">Enregistrer</button></div></div></div>`);
+  },
+  saveDirection() { const f = document.getElementById('form-direction'); if (!f.checkValidity()) { f.reportValidity(); return; } const id = document.getElementById('d-id').value; const p = { codeDirection: document.getElementById('d-code').value.trim().toUpperCase(), libelle: document.getElementById('d-libelle').value.trim(), actif: true }; try { if (id) API.updateDirection(Number(id), p); else API.createDirection(p); Utils.toast(id ? 'Modifiée' : 'Créée', 'success'); App.closeModal(); App.refresh(); } catch (e) { Utils.toast(e.message, 'error'); } },
+  supprimerDirection(id) { if (!Utils.confirm('Supprimer ?')) return; try { API.deleteDirection(id); Utils.toast('Supprimée', 'success'); App.refresh(); } catch (e) { Utils.toast(e.message, 'error'); } },
+
+  renderDestinations() {
+    const tbody = document.getElementById('destinations-tbody'); if (!tbody) return;
+    const q = (document.getElementById('filter-destination')?.value || '').trim().toLowerCase();
+    let list = API.getDestinations();
+    if (q) list = list.filter(d => [d.code, d.libelle, d.ville].some(v => (v||'').toLowerCase().includes(q)));
+    tbody.innerHTML = list.map(d => `<tr><td><strong>${Utils.esc(d.code)}</strong></td><td>${Utils.esc(d.libelle)}</td><td>${Utils.esc(d.ville||'—')}</td><td>${Utils.esc(d.pays||'—')}</td><td>${d.actif ? 'Active' : 'Inactive'}</td><td><div class="actions-cell"><button class="btn btn-sm btn-outline" onclick="Actions.openDestinationModal(${d.idDestination})">Modifier</button><button class="btn btn-sm btn-danger" onclick="Actions.supprimerDestination(${d.idDestination})">Suppr.</button></div></td></tr>`).join('');
+  },
+  nouvelleDestination() { Actions.openDestinationModal(null); },
+  openDestinationModal(id) {
+    const isEdit = !!id;
+    const d = isEdit ? API.getDestination(id) : null;
+    App.openModal(`<div class="modal-overlay active"><div class="modal" style="max-width:640px"><div class="modal-header"><h3>${isEdit ? 'Modifier' : 'Nouvelle destination'}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div><div class="modal-body"><form id="form-destination"><input type="hidden" id="dest-id" value="${isEdit ? d.idDestination : ''}"><div class="form-grid"><div class="form-group"><label>Code *</label><input type="text" id="dest-code" class="form-control" required value="${d ? Utils.esc(d.code) : ''}"></div><div class="form-group"><label>Libellé *</label><input type="text" id="dest-libelle" class="form-control" required value="${d ? Utils.esc(d.libelle) : ''}"></div><div class="form-group"><label>Ville *</label><input type="text" id="dest-ville" class="form-control" required value="${d ? Utils.esc(d.ville||'') : ''}"></div><div class="form-group"><label>Pays *</label><input type="text" id="dest-pays" class="form-control" required value="${d ? Utils.esc(d.pays||'Maroc') : 'Maroc'}"></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn" onclick="Actions.saveDestination()">Enregistrer</button></div></div></div>`);
+  },
+  saveDestination() { const f = document.getElementById('form-destination'); if (!f.checkValidity()) { f.reportValidity(); return; } const id = document.getElementById('dest-id').value; const p = { code: document.getElementById('dest-code').value.trim().toUpperCase(), libelle: document.getElementById('dest-libelle').value.trim(), ville: document.getElementById('dest-ville').value.trim(), pays: document.getElementById('dest-pays').value.trim(), region: '', distanceRef: 0, actif: true }; try { if (id) API.updateDestination(Number(id), p); else API.createDestination(p); Utils.toast(id ? 'Modifiée' : 'Créée', 'success'); App.closeModal(); App.refresh(); } catch (e) { Utils.toast(e.message, 'error'); } },
+  supprimerDestination(id) { if (!Utils.confirm('Supprimer ?')) return; try { API.deleteDestination(id); Utils.toast('Supprimée', 'success'); App.refresh(); } catch (e) { Utils.toast(e.message, 'error'); } },
+
+  renderComptes() {
+    const tbody = document.getElementById('comptes-tbody'); if (!tbody) return;
+    const q = (document.getElementById('filter-compte')?.value || '').trim().toLowerCase();
+    const fRole = document.getElementById('filter-compte-role')?.value || '';
+    let list = API.getUsers();
+    if (q) list = list.filter(u => { const a = u.idAgent ? API.getAgent(u.idAgent) : null; const nom = a ? `${a.prenom} ${a.nom} ${a.matricule}` : ''; return [u.login, u.role, nom].some(v => (v||'').toLowerCase().includes(q)); });
+    if (fRole) list = list.filter(u => u.role === fRole);
+    list = list.slice().sort((a,b) => a.login.localeCompare(b.login));
+    tbody.innerHTML = list.map(u => { const agent = u.idAgent ? API.getAgent(u.idAgent) : null; return `<tr><td><strong>${Utils.esc(u.login)}</strong></td><td>${agent ? Utils.esc(agent.prenom + ' ' + agent.nom) : '—'}</td><td>${Actions.roleBadge(u.role)}</td><td>${agent ? Utils.esc(agent.matricule) : '—'}</td><td>${u.dateLogin ? Utils.formatDateTime(u.dateLogin) : '—'}</td><td>${u.actif !== false ? 'Actif' : 'Inactif'}</td><td><div class="actions-cell"><button class="btn btn-sm btn-outline" onclick="Actions.openCompteModal(${u.idUtilisateur})">Modifier</button><button class="btn btn-sm btn-warning" onclick="Actions.openChangePassword(${u.idUtilisateur})">🔑</button>${u.login !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="Actions.supprimerCompte(${u.idUtilisateur})">Suppr.</button>` : ''}</div></td></tr>`; }).join('');
+  },
+  openCompteModal(id) {
+    const isEdit = !!id;
+    const u = isEdit ? API.getUsers().find(x => x.idUtilisateur === id) : null;
+    if (isEdit && !u) return;
+    const agents = API.getAgents();
+    const roles = API.getRoles().filter(r => r.actif !== false);
+    App.openModal(`<div class="modal-overlay active"><div class="modal" style="max-width:640px"><div class="modal-header"><h3>${isEdit ? 'Modifier' : 'Nouveau compte'}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div><div class="modal-body"><form id="form-compte"><input type="hidden" id="c-id" value="${isEdit ? u.idUtilisateur : ''}"><div class="form-grid"><div class="form-group"><label>Login *</label><input type="text" id="c-login" class="form-control" required value="${u ? Utils.esc(u.login) : ''}" ${isEdit ? 'readonly' : ''}></div><div class="form-group"><label>Rôle *</label><select id="c-role" class="form-control" required>${roles.map(r => `<option value="${Utils.esc(r.code)}" ${u && u.role===r.code?'selected':''}>${Utils.esc(r.libelle)}</option>`).join('')}</select></div><div class="form-group full-width"><label>Agent lié</label><select id="c-agent" class="form-control select-scroll" size="6"><option value="">— Aucun —</option>${agents.map(a => `<option value="${a.idAgent}" ${u && u.idAgent === a.idAgent ? 'selected' : ''}>${Utils.esc(a.prenom + ' ' + a.nom)} — ${Utils.esc(a.matricule)}</option>`).join('')}</select></div>${!isEdit ? `<div class="form-group"><label>Mot de passe *</label><input type="password" id="c-password" class="form-control" required></div><div class="form-group"><label>Confirmer *</label><input type="password" id="c-password2" class="form-control" required></div>` : ''}<div class="form-group"><label>Statut</label><select id="c-actif" class="form-control"><option value="true" ${!u || u.actif !== false ? 'selected' : ''}>Actif</option><option value="false" ${u && u.actif === false ? 'selected' : ''}>Inactif</option></select></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn" onclick="Actions.saveCompte()">Enregistrer</button></div></div></div>`);
+  },
+  saveCompte() {
+    const f = document.getElementById('form-compte');
+    if (!f.checkValidity()) { f.reportValidity(); return; }
+    const id = document.getElementById('c-id').value;
+    const login = document.getElementById('c-login').value.trim();
+    const role = document.getElementById('c-role').value;
+    const idAgent = document.getElementById('c-agent').value ? Number(document.getElementById('c-agent').value) : null;
+    const actif = document.getElementById('c-actif').value === 'true';
+    try {
+      if (id) { API.updateUser(Number(id), {role, idAgent, actif}); Utils.toast('Modifié', 'success'); }
+      else { const pwd = document.getElementById('c-password').value; const pwd2 = document.getElementById('c-password2').value; if (pwd !== pwd2) { Utils.toast('Différents', 'error'); return; } API.createUser({login, password: pwd, role, idAgent, actif}); Utils.toast('Créé', 'success'); }
+      App.closeModal(); App.refresh();
+    } catch (e) { Utils.toast(e.message, 'error'); }
+  },
+  openChangePassword(id) { const u = API.getUsers().find(x => x.idUtilisateur === id); if (!u) return; App.openModal(`<div class="modal-overlay active"><div class="modal" style="max-width:480px"><div class="modal-header"><h3>🔑 ${Utils.esc(u.login)}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div><div class="modal-body"><form id="form-password"><input type="hidden" id="pw-id" value="${u.idUtilisateur}"><div class="form-group"><label>Nouveau *</label><input type="password" id="pw-new" class="form-control" required></div><div class="form-group"><label>Confirmer *</label><input type="password" id="pw-new2" class="form-control" required></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn btn-warning" onclick="Actions.savePassword()">Mettre à jour</button></div></div></div>`); },
+  savePassword() { const p1 = document.getElementById('pw-new').value; const p2 = document.getElementById('pw-new2').value; if (p1 !== p2) { Utils.toast('Différents', 'error'); return; } API.updateUser(Number(document.getElementById('pw-id').value), {password: p1}); Utils.toast('Mis à jour', 'success'); App.closeModal(); App.refresh(); },
+  supprimerCompte(id) { const u = API.getUsers().find(x => x.idUtilisateur === id); if (!u || u.login === 'admin') { Utils.toast('Protégé', 'error'); return; } if (!Utils.confirm(`Supprimer ${u.login} ?`)) return; API.deleteUser(id); Utils.toast('Supprimé', 'success'); App.refresh(); },
+
+  roleBadge(roleCode) { const r = API.getRoleByCode(roleCode); if (!r) return `<span class="badge">${Utils.esc(roleCode)}</span>`; return `<span class="badge" style="background:${Utils.esc(r.couleur || '#6c757d')};color:#fff">${Utils.esc(r.libelle)}</span>`; },
+  renderRoles() {
+    const tbody = document.getElementById('roles-tbody'); if (!tbody) return;
+    const list = API.getRoles();
+    const users = API.getUsers();
+    const catalog = API.PAGES_CATALOG;
+    tbody.innerHTML = list.map(r => {
+      const nbUsers = users.filter(u => u.role === r.code).length;
+      const pagesLabels = (r.pages || []).map(pid => catalog.find(c => c.id === pid)?.label || pid);
+      return `<tr><td><strong>${Utils.esc(r.code)}</strong></td><td>${Utils.esc(r.libelle)}</td><td><span class="badge badge-SOUMIS">${pagesLabels.length} page(s)</span></td><td>${nbUsers}</td><td>${r.isSystem ? 'Système' : 'Perso'}</td><td>${r.actif !== false ? 'Actif' : 'Inactif'}</td><td><div class="actions-cell"><button class="btn btn-sm btn-outline" onclick="Actions.openRoleModal(${r.idRole})">Modifier</button></div></td></tr>`;
+    }).join('');
+  },
+  openRoleModal(id) {
+    const isEdit = !!id;
+    const r = isEdit ? API.getRole(id) : null;
+    const catalog = API.PAGES_CATALOG;
+    const selectedPages = r ? (r.pages || []) : ['dashboard'];
+    App.openModal(`<div class="modal-overlay active"><div class="modal" style="max-width:720px"><div class="modal-header"><h3>${isEdit ? 'Modifier' : 'Nouveau rôle'}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div><div class="modal-body"><form id="form-role"><input type="hidden" id="r-id" value="${isEdit ? r.idRole : ''}"><div class="form-grid"><div class="form-group"><label>Code *</label><input type="text" id="r-code" class="form-control" required value="${r ? Utils.esc(r.code) : ''}" ${r && r.isSystem ? 'readonly' : ''}></div><div class="form-group"><label>Libellé *</label><input type="text" id="r-libelle" class="form-control" required value="${r ? Utils.esc(r.libelle) : ''}"></div><div class="form-group"><label>Couleur</label><input type="color" id="r-couleur" class="form-control" style="height:42px" value="${r ? (r.couleur || '#6c757d') : '#6c757d'}"></div><div class="form-group"><label>Statut</label><select id="r-actif" class="form-control"><option value="true" ${!r || r.actif !== false ? 'selected' : ''}>Actif</option><option value="false" ${r && r.actif === false ? 'selected' : ''}>Inactif</option></select></div><div class="form-group full-width"><label>Pages autorisées *</label><div class="permissions-grid" id="r-pages-grid">${catalog.map(p => `<label class="permission-item ${selectedPages.includes(p.id) ? 'checked' : ''}"><input type="checkbox" data-page-id="${p.id}" ${selectedPages.includes(p.id) ? 'checked' : ''}><span>${Utils.esc(p.label)}</span></label>`).join('')}</div></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn" onclick="Actions.saveRole()">Enregistrer</button></div></div></div>`);
+    document.querySelectorAll('#r-pages-grid input[type=checkbox]').forEach(cb => cb.addEventListener('change', () => cb.closest('.permission-item').classList.toggle('checked', cb.checked)));
+  },
+  saveRole() {
+    const id = document.getElementById('r-id').value;
+    const code = document.getElementById('r-code').value.trim().toUpperCase();
+    const libelle = document.getElementById('r-libelle').value.trim();
+    const couleur = document.getElementById('r-couleur').value;
+    const actif = document.getElementById('r-actif').value === 'true';
+    const pages = Array.from(document.querySelectorAll('#r-pages-grid input[type=checkbox]:checked')).map(cb => cb.dataset.pageId);
+    if (!pages.length) { Utils.toast('Au moins une page', 'error'); return; }
+    try {
+      if (id) { const r = API.getRole(Number(id)); const data = {libelle, couleur, actif, pages}; if (!r.isSystem) data.code = code; API.updateRole(Number(id), data); Utils.toast('Modifié', 'success'); }
+      else { API.createRole({code, libelle, couleur, actif, pages}); Utils.toast('Créé', 'success'); }
+      App.closeModal(); App.refresh();
+    } catch (e) { Utils.toast(e.message, 'error'); }
+  },
+
+  renderStatistiques() {
+    const stats = Scope.getStatistiques();
+    const elStatut = document.getElementById('chart-statut');
+    if (elStatut && typeof Chart !== 'undefined') new Chart(elStatut, {type:'doughnut', data:{labels:Object.keys(stats.byStatut), datasets:[{data:Object.values(stats.byStatut), backgroundColor:['#6c757d','#ffc107','#17a2b8','#0b3d91','#1e7e34','#c82333']}]}, options:{responsive:true, plugins:{legend:{position:'right'}}}});
+    const elDir = document.getElementById('chart-direction');
+    if (elDir && typeof Chart !== 'undefined') { const labels = Object.keys(stats.byDirection); new Chart(elDir, {type:'bar', data:{labels, datasets:[{label:'Missions', data:labels.map(l => stats.byDirection[l]), backgroundColor:'#0b3d91'}]}, options:{responsive:true}}); }
+  },
+  exportComplet() {
+    try {
+      const wb = XLSX.utils.book_new();
+      const feuilles = [
+        {nom:'Missions', data:Excel.missionsVersLignes()},
+        {nom:'Demandes', data:Excel.demandesVehiculesVersLignes()},
+        {nom:'Parc', data:Excel.parcAutoVersLignes()},
+        {nom:'Agents', data:Excel.agentsVersLignes()},
+        {nom:'Directions', data:Excel.directionsVersLignes()},
+        {nom:'Destinations', data:Excel.destinationsVersLignes()}
+      ];
+      feuilles.forEach(f => { if (!f.data.length) return; const ws = XLSX.utils.json_to_sheet(f.data); XLSX.utils.book_append_sheet(wb, ws, f.nom.substring(0,31)); });
+      XLSX.writeFile(wb, `export_complet_${new Date().toISOString().substring(0,10)}.xlsx`);
+      Utils.toast('Export réussi', 'success');
+    } catch (e) { Utils.toast('Erreur : ' + e.message, 'error'); }
+  }
+};
+
+/* =====================================================
+   10. HOOKS POST-RENDU
+   ===================================================== */
+function afterMissions() { ['filter-statut','filter-mission-direction','filter-search'].forEach(id => { const el = document.getElementById(id); if (el) { el.addEventListener('input', Actions.renderMissions); el.addEventListener('change', Actions.renderMissions); } }); Actions.renderMissions(); }
+function afterVehicules() { ['filter-veh-statut','filter-veh-direction','filter-veh-search'].forEach(id => { const el = document.getElementById(id); if (el) { el.addEventListener('input', Actions.renderVehicules); el.addEventListener('change', Actions.renderVehicules); } }); Actions.renderVehicules(); }
+function afterParcAuto() { ['filter-parc-auto','filter-parc-auto-statut','filter-parc-auto-direction'].forEach(id => { const el = document.getElementById(id); if (el) { el.addEventListener('input', Actions.renderParcAuto); el.addEventListener('change', Actions.renderParcAuto); } }); Actions.renderParcAuto(); }
+function afterAgents() { ['filter-agent','filter-agent-direction','filter-agent-statut'].forEach(id => { const el = document.getElementById(id); if (el) { el.addEventListener('input', Actions.renderAgents); el.addEventListener('change', Actions.renderAgents); } }); Actions.renderAgents(); }
+function afterDirections() { const el = document.getElementById('filter-direction'); if (el) el.addEventListener('input', Actions.renderDirections); Actions.renderDirections(); }
+function afterDestinations() { const el = document.getElementById('filter-destination'); if (el) el.addEventListener('input', Actions.renderDestinations); Actions.renderDestinations(); }
+function afterStatistiques() { setTimeout(() => Actions.renderStatistiques(), 50); }
+function afterComptes() { ['filter-compte','filter-compte-role'].forEach(id => { const el = document.getElementById(id); if (el) { el.addEventListener('input', Actions.renderComptes); el.addEventListener('change', Actions.renderComptes); } }); Actions.renderComptes(); }
+function afterRoles() { Actions.renderRoles(); }
+
+/* =====================================================
+   11. DÉMARRAGE
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await API.init();
+    App.mount();
+  } catch (e) {
+    console.error('Erreur :', e);
+    document.getElementById('root').innerHTML = `
+      <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0b3d91;color:#fff;font-family:sans-serif;text-align:center;padding:20px">
+        <div>
+          <h1>❌ Impossible de se connecter au serveur</h1>
+          <p>Vérifiez que le Back-end est démarré : <code>npm start</code> dans <code>backend</code></p>
+          <p style="opacity:.7;font-size:14px;margin-top:20px">Erreur : ${e.message}</p>
+        </div>
+      </div>`;
+  }
+});
+</script>
+</body>
+</html>
