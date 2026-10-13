@@ -1,13 +1,14 @@
 /* =====================================================
    CONNEXION MYSQL
    ===================================================== */
-const mysql = require('mysql2/promise');
+const MySQL = require('mysql2/promise');
 
-const pool = mysql.createPool({
-  host:     process.env.DB_HOST     || '127.0.0.1',
-  user:     process.env.DB_USER     || 'root',
+const pool = MySQL.createPool({
+  host: process.env.DB_HOST || '127.0.0.1',
+  user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME     || 'gestion_missions',
+  database: process.env.DB_NAME || 'missions_gestion',
+  port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
