@@ -14,6 +14,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 /* ---------- SERVIR LE FRONTEND ---------- */
+// Sert tous les fichiers statiques (index.html, CSS, JS, images...)
+// depuis le dossier PARENT de backend/
 app.use(express.static(path.join(__dirname, '..')));
 
 /* ---------- ROUTES API ---------- */
@@ -32,7 +34,7 @@ app.use('/api/vehicules',           require('./routes/vehicules'));
 app.use('/api/demandes-vehicules',  require('./routes/demandes-vehicules'));
 app.use('/api/statuts-vehicule',    require('./routes/statuts-vehicule'));
 
-/* ---------- ROUTE PAR DÉFAUT ---------- */
+/* ---------- ROUTE PAR DÉFAUT : renvoyer index.html ---------- */
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
