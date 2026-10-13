@@ -182,6 +182,11 @@ footer.app-footer{background:var(--gray-800);color:rgba(255,255,255,.6);padding:
 <div id="modal-container"></div>
 <script>
 /* =====================================================
+   0. CONFIGURATION DE L'API (URL DU BACKEND SUR SUGA)
+   ===================================================== */
+const API_BASE_URL = 'https://kfufkyny7k39-production-eyelxwya.europe-west1.suga.run';
+
+/* =====================================================
    1. COUCHE API
    ===================================================== */
 const API = (() => {
@@ -194,18 +199,23 @@ const API = (() => {
     {id:'comptes', label:'Comptes'},{id:'roles', label:'Rôles'}
   ];
   function nextId(entity) { return ++seq[entity]; }
-  async function fetchJson(url, options = {}) { const r = await fetch(url, options); if (!r.ok) throw new Error(`Erreur ${r.status}`); return r.json(); }
+  async function fetchJson(url, options = {}) { 
+    const fullUrl = url.startsWith('/') ? API_BASE_URL + url : url;
+    const r = await fetch(fullUrl, options); 
+    if (!r.ok) throw new Error(`Erreur ${r.status}`); 
+    return r.json(); 
+  }
   async function pushCreate(entity, data) { 
     try { 
-      const r = await fetch(`/api/${entity}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); 
+      const r = await fetch(`${API_BASE_URL}/api/${entity}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); 
       if (!r.ok) { const errText = await r.text(); console.error(`❌ POST /api/${entity} (${r.status}) :`, errText); if (window.Utils) Utils.toast(`Erreur serveur (${r.status})`, 'error', 5000); }
       else { console.log(`✅ POST /api/${entity} OK`, data); }
     } catch (e) { console.error('Erreur sync create', entity, e); } 
   }
   async function pushUpdate(entity, id, data) { 
-    try { const r = await fetch(`/api/${entity}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (!r.ok) console.error(`❌ PUT /api/${entity}/${id} (${r.status})`); } catch (e) { console.error(e); } 
+    try { const r = await fetch(`${API_BASE_URL}/api/${entity}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (!r.ok) console.error(`❌ PUT /api/${entity}/${id} (${r.status})`); } catch (e) { console.error(e); } 
   }
-  async function pushDelete(entity, id) { try { await fetch(`/api/${entity}/${id}`, { method: 'DELETE' }); } catch (e) { console.error(e); } }
+  async function pushDelete(entity, id) { try { await fetch(`${API_BASE_URL}/api/${entity}/${id}`, { method: 'DELETE' }); } catch (e) { console.error(e); } }
   async function init() {
     const [agents, directions, destinations, missions, validations, workflows, statuts, transports, typesFrais, users, roles, vehicules, demandesVehicules, statutsVehicule] = await Promise.all([
       fetchJson('/api/agents'), fetchJson('/api/directions'), fetchJson('/api/destinations'), fetchJson('/api/missions'),
@@ -275,7 +285,7 @@ const API = (() => {
     getValidationsEnAttentePour: (idAgent) => cache.validations.filter(v => v.idValidateur === idAgent && v.decision === 'EN_ATTENTE'),
     createValidation(v) { v.idValidation = nextId('validation'); v.decision = v.decision || 'EN_ATTENTE'; v.dateCreation = new Date().toISOString(); cache.validations.push(v); pushCreate('validations', v); return v; },
     updateValidation(id, data) { const i = cache.validations.findIndex(v => v.idValidation === id); if (i < 0) throw new Error('Introuvable'); cache.validations[i] = { ...cache.validations[i], ...data }; pushUpdate('validations', id, cache.validations[i]); return cache.validations[i]; },
-    deleteValidationsByMission(idMission) { cache.validations = cache.validations.filter(v => v.idMission !== idMission); fetch(`/api/validations/mission/${idMission}`, { method: 'DELETE' }); },
+    deleteValidationsByMission(idMission) { cache.validations = cache.validations.filter(v => v.idMission !== idMission); fetch(`${API_BASE_URL}/api/validations/mission/${idMission}`, { method: 'DELETE' }); },
     getUsers: () => cache.users, getUser: (login) => cache.users.find(u => u.login === login),
     getUserById: (id) => cache.users.find(u => u.idUtilisateur === id),
     createUser(u) { u.idUtilisateur = nextId('user'); u.actif = u.actif !== false; if (u.idAgent === undefined) u.idAgent = null; cache.users.push(u); pushCreate('users', u); return u; },
@@ -648,7 +658,6 @@ const Actions = {
       </div></div>`);
   },
 
-  /* ⭐ NOUVELLE MISSION : Crée DIRECTEMENT la validation pour le DIRECTEUR de la direction */
   nouvelleMission() {
     const session = Auth.session();
     const agent = Auth.currentAgent();
@@ -758,7 +767,6 @@ const Actions = {
   missionChangeParticipantRole(idAgent, newRole) { const p = (Actions._missionParticipants || []).find(x => x.idAgent === idAgent); if (p) p.roleMission = newRole; },
   missionRemoveParticipant(idAgent) { Actions._missionParticipants = (Actions._missionParticipants || []).filter(x => x.idAgent !== idAgent); Actions.renderMissionParticipants(); },
 
-  /* ⭐ SAVE MISSION : Crée DIRECTEMENT la validation pour le DIRECTEUR */
   saveMission(submit = false) {
     const form = document.getElementById('form-mission');
     if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -790,7 +798,6 @@ const Actions = {
         const missionDir = mission.idDirection;
         console.log('🔍 DEBUG - Mission créée, idMission:', mission.idMission, ', idDirection:', missionDir);
         
-        // ⭐ Chercher un DIRECTEUR dans la même direction que la mission
         const tousLesDirecteurs = API.getUsers().filter(u => u.role === 'DIRECTEUR' && u.actif !== false && u.idAgent);
         console.log('🔍 DEBUG - Directeurs disponibles:', tousLesDirecteurs.map(u => ({ login: u.login, idAgent: u.idAgent, idDirection: u.idAgent ? API.getAgent(u.idAgent)?.idDirection : null })));
         
@@ -1457,7 +1464,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0b3d91;color:#fff;font-family:sans-serif;text-align:center;padding:20px">
         <div>
           <h1>❌ Impossible de se connecter au serveur</h1>
-          <p>Vérifiez que le Back-end est démarré : <code>npm start</code> dans <code>backend</code></p>
+          <p>Vérifiez que le Back-end est démarré.</p>
           <p style="opacity:.7;font-size:14px;margin-top:20px">Erreur : ${e.message}</p>
         </div>
       </div>`;
