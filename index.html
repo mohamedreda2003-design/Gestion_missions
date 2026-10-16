@@ -184,7 +184,11 @@ footer.app-footer{background:var(--gray-800);color:rgba(255,255,255,.6);padding:
 /* =====================================================
    0. CONFIGURATION DE L'API (URL DU BACKEND SUR SUGA)
    ===================================================== */
-const API_BASE_URL = 'https://jvevjquns6bc-production-eyelxwya.europe-west1.suga.run';
+const API_BASE_URL = window.GM_API_URL || (
+  window.location.hostname.endsWith('.up.railway.app')
+    ? window.location.origin
+    : 'https://jvevjquns6bc-production-eyelxwya.europe-west1.suga.run'
+);
 
 /* =====================================================
    1. COUCHE API

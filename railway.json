@@ -1,0 +1,11 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "buildCommand": "npm --prefix backend ci"
+  },
+  "deploy": {
+    "startCommand": "npm --prefix backend start",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 120
+  }
+}
