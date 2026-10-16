@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { requireAdmin } = require('../middleware/auth');
 
 function parseRole(r) {
   return {
@@ -31,7 +32,7 @@ router.get('/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const r = req.body;
     const [result] = await db.query(
@@ -42,7 +43,7 @@ router.post('/', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const r = req.body;
     await db.query(
@@ -53,7 +54,7 @@ router.put('/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     await db.query('DELETE FROM roles WHERE idRole = ? AND isSystem = 0', [req.params.id]);
     res.json({ success: true });

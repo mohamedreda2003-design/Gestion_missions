@@ -2479,8 +2479,8 @@ const Actions = {
                   <small class="text-muted" id="c-agent-count">${agents.length} agent(s)</small>
                 </div>
                 ${!isEdit ? `
-                  <div class="form-group"><label>Mot de passe <span class="required">*</span></label><input type="password" id="c-password" class="form-control" required minlength="3"></div>
-                  <div class="form-group"><label>Confirmer <span class="required">*</span></label><input type="password" id="c-password2" class="form-control" required minlength="3"></div>
+                  <div class="form-group"><label>Mot de passe <span class="required">*</span></label><input type="password" id="c-password" class="form-control" required minlength="12" autocomplete="new-password"></div>
+                  <div class="form-group"><label>Confirmer <span class="required">*</span></label><input type="password" id="c-password2" class="form-control" required minlength="12" autocomplete="new-password"></div>
                 ` : `<div class="form-group full-width"><div class="alert alert-info">💡 Utilisez le bouton 🔑 pour changer le mot de passe.</div></div>`}
                 <div class="form-group"><label>Statut</label>
                   <select id="c-actif" class="form-control">
@@ -2553,9 +2553,9 @@ const Actions = {
             <form id="form-password">
               <input type="hidden" id="pw-id" value="${u.idUtilisateur}">
               <div class="form-group" style="margin-bottom:12px"><label>Nouveau <span class="required">*</span></label>
-                <input type="password" id="pw-new" class="form-control" required minlength="3"></div>
+                <input type="password" id="pw-new" class="form-control" required minlength="12" autocomplete="new-password"></div>
               <div class="form-group"><label>Confirmer <span class="required">*</span></label>
-                <input type="password" id="pw-new2" class="form-control" required minlength="3"></div>
+                <input type="password" id="pw-new2" class="form-control" required minlength="12" autocomplete="new-password"></div>
             </form>
           </div>
           <div class="modal-footer">

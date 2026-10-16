@@ -20,10 +20,14 @@ const ALL_MODULES = [
 const App = {
   currentPage: 'dashboard',
 
-  init: function() {
-    const session = Auth.session();
-    if (session) this.renderLayout(session);
-    else this.renderLogin();
+  init: async function() {
+    try {
+      const session = await Auth.restore();
+      if (session) this.renderLayout(session);
+      else this.renderLogin();
+    } catch {
+      this.renderLogin();
+    }
   },
 
   // --- ÉCRAN DE CONNEXION ---
@@ -48,13 +52,6 @@ const App = {
             </div>
             <button type="submit" style="width: 100%; padding: 12px; background: #1e3a8a; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer;">Se connecter</button>
           </form>
-          <div style="margin-top: 20px; background: #e0f2fe; padding: 15px; border-radius: 5px; font-size: 13px; color: #0369a1;">
-            <strong>Comptes de démonstration :</strong>
-            <ul style="margin: 5px 0 0 20px; padding: 0;">
-              <li>admin / admin — Administrateur</li>
-              <li>sspa / 1234 — SSPA</li>
-            </ul>
-          </div>
         </div>
       </div>
     `;
@@ -66,7 +63,7 @@ const App = {
       try {
         await Auth.login(login, password);
         window.showToast('Connexion réussie', 'success');
-        setTimeout(() => App.renderLayout(Auth.session()), 500);
+        App.renderLayout(Auth.session());
       } catch (error) {
         window.showToast(error.message, 'error');
       }

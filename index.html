@@ -182,13 +182,9 @@ footer.app-footer{background:var(--gray-800);color:rgba(255,255,255,.6);padding:
 <div id="modal-container"></div>
 <script>
 /* =====================================================
-   0. CONFIGURATION DE L'API (URL DU BACKEND SUR SUGA)
+   0. API servie sur la même origine que le frontend
    ===================================================== */
-const API_BASE_URL = window.GM_API_URL || (
-  window.location.hostname.endsWith('.up.railway.app')
-    ? window.location.origin
-    : 'https://jvevjquns6bc-production-eyelxwya.europe-west1.suga.run'
-);
+const API_BASE_URL = window.location.origin;
 
 /* =====================================================
    1. COUCHE API
@@ -205,7 +201,7 @@ const API = (() => {
   function nextId(entity) { return ++seq[entity]; }
   async function fetchJson(url, options = {}) { 
     const fullUrl = url.startsWith('/') ? API_BASE_URL + url : url;
-    const r = await fetch(fullUrl, options); 
+    const r = await fetch(fullUrl, { credentials: 'same-origin', ...options });
     if (!r.ok) throw new Error(`Erreur ${r.status}`); 
     return r.json(); 
   }
@@ -224,7 +220,7 @@ const API = (() => {
     const [agents, directions, destinations, missions, validations, workflows, statuts, transports, typesFrais, users, roles, vehicules, demandesVehicules, statutsVehicule] = await Promise.all([
       fetchJson('/api/agents'), fetchJson('/api/directions'), fetchJson('/api/destinations'), fetchJson('/api/missions'),
       fetchJson('/api/validations'), fetchJson('/api/workflows'), fetchJson('/api/statuts'), fetchJson('/api/transports'),
-      fetchJson('/api/types-frais'), fetchJson('/api/users'), fetchJson('/api/roles'), fetchJson('/api/vehicules'),
+      fetchJson('/api/types-frais'), (Auth.session()?.role === 'ADMIN' ? fetchJson('/api/users') : Promise.resolve([])), fetchJson('/api/roles'), fetchJson('/api/vehicules'),
       fetchJson('/api/demandes-vehicules'), fetchJson('/api/statuts-vehicule')
     ]);
     cache.agents = agents; cache.directions = directions; cache.destinations = destinations;
@@ -292,8 +288,8 @@ const API = (() => {
     deleteValidationsByMission(idMission) { cache.validations = cache.validations.filter(v => v.idMission !== idMission); fetch(`${API_BASE_URL}/api/validations/mission/${idMission}`, { method: 'DELETE' }); },
     getUsers: () => cache.users, getUser: (login) => cache.users.find(u => u.login === login),
     getUserById: (id) => cache.users.find(u => u.idUtilisateur === id),
-    createUser(u) { u.idUtilisateur = nextId('user'); u.actif = u.actif !== false; if (u.idAgent === undefined) u.idAgent = null; cache.users.push(u); pushCreate('users', u); return u; },
-    updateUser(id, data) { const i = cache.users.findIndex(u => u.idUtilisateur === id); if (i < 0) throw new Error('Introuvable'); cache.users[i] = { ...cache.users[i], ...data }; pushUpdate('users', id, cache.users[i]); return cache.users[i]; },
+    createUser(u) { const submitted = { ...u }; const safe = { ...u, idUtilisateur: nextId('user'), actif: u.actif !== false }; if (safe.idAgent === undefined) safe.idAgent = null; delete safe.password; cache.users.push(safe); pushCreate('users', submitted); return safe; },
+    updateUser(id, data) { const i = cache.users.findIndex(u => u.idUtilisateur === id); if (i < 0) throw new Error('Introuvable'); const submitted = { ...data }; cache.users[i] = { ...cache.users[i], ...data }; delete cache.users[i].password; pushUpdate('users', id, submitted); return cache.users[i]; },
     deleteUser(id) { const u = cache.users.find(x => x.idUtilisateur === id); if (u && u.login === 'admin') throw new Error('Compte admin protégé'); cache.users = cache.users.filter(x => x.idUtilisateur !== id); pushDelete('users', id); }
   };
 })();
@@ -304,16 +300,29 @@ const API = (() => {
 const Auth = (() => {
   const KEY = 'gm_session';
   return {
-    login(login, password) {
-      const u = API.getUser(login);
-      if (!u || u.password !== password) throw new Error('Identifiants invalides');
-      if (u.actif === false) throw new Error('Compte désactivé');
-      const s = {login:u.login, role:u.role, idAgent:u.idAgent, idUtilisateur:u.idUtilisateur, dateLogin:new Date().toISOString()};
+    async login(login, password) {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login, password })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Identifiants invalides');
+      const s = result.user;
       localStorage.setItem(KEY, JSON.stringify(s));
-      try { API.updateUser(u.idUtilisateur, {dateLogin: s.dateLogin}); } catch(e) {}
       return s;
     },
-    logout() { localStorage.removeItem(KEY); window.location.reload(); },
+    async restore() {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'same-origin', cache: 'no-store' });
+      if (!response.ok) { localStorage.removeItem(KEY); return null; }
+      const result = await response.json();
+      localStorage.setItem(KEY, JSON.stringify(result.user));
+      return result.user;
+    },
+    async logout() {
+      try { await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'same-origin' }); }
+      finally { localStorage.removeItem(KEY); window.location.reload(); }
+    },
     session() { const s = localStorage.getItem(KEY); if (!s) return null; try { return JSON.parse(s); } catch { return null; } },
     currentAgent() { const s = this.session(); return s && s.idAgent ? API.getAgent(s.idAgent) : null; }
   };
@@ -559,8 +568,8 @@ const App = (() => {
   function logout() { Auth.logout(); }
   function renderLogin() {
     const root = document.getElementById('root');
-    root.innerHTML = `<div class="login-wrapper"><div class="login-card"><div class="logo-big">GM</div><h1>Gestion des Ordres de Mission</h1><p>Administration Publique — Accès sécurisé</p><form id="login-form"><div class="form-group"><label>Identifiant <span class="required">*</span></label><input type="text" id="login" class="form-control" placeholder="ex: y.tazi" required autofocus></div><div class="form-group"><label>Mot de passe <span class="required">*</span></label><input type="password" id="password" class="form-control" placeholder="••••••" required></div><button type="submit" class="btn">Se connecter</button></form></div></div>`;
-    document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); try { Auth.login(document.getElementById('login').value.trim(), document.getElementById('password').value); Utils.toast('Connexion réussie', 'success', 1200); setTimeout(() => { currentPage = 'dashboard'; mount(); }, 400); } catch (err) { Utils.toast(err.message, 'error'); } });
+    root.innerHTML = `<div class="login-wrapper"><div class="login-card"><div class="logo-big">GM</div><h1>Gestion des Ordres de Mission</h1><p>Administration Publique — Accès sécurisé</p><form id="login-form"><div class="form-group"><label>Identifiant <span class="required">*</span></label><input type="text" id="login" class="form-control" autocomplete="username" required autofocus></div><div class="form-group"><label>Mot de passe <span class="required">*</span></label><input type="password" id="password" class="form-control" autocomplete="current-password" required></div><button type="submit" class="btn">Se connecter</button></form></div></div>`;
+    document.getElementById('login-form').addEventListener('submit', async (e) => { e.preventDefault(); const button = e.currentTarget.querySelector('button[type="submit"]'); button.disabled = true; try { await Auth.login(document.getElementById('login').value.trim(), document.getElementById('password').value); await API.init(); Utils.toast('Connexion réussie', 'success', 1200); currentPage = 'dashboard'; mount(); } catch (err) { Utils.toast(err.message, 'error'); } finally { button.disabled = false; } });
   }
   function openModal(html) { document.getElementById('modal-container').innerHTML = html; }
   function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
@@ -1362,7 +1371,7 @@ const Actions = {
     if (isEdit && !u) return;
     const agents = API.getAgents();
     const roles = API.getRoles().filter(r => r.actif !== false);
-    App.openModal(`<div class="modal-overlay active"><div class="modal" style="max-width:640px"><div class="modal-header"><h3>${isEdit ? 'Modifier' : 'Nouveau compte'}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div><div class="modal-body"><form id="form-compte"><input type="hidden" id="c-id" value="${isEdit ? u.idUtilisateur : ''}"><div class="form-grid"><div class="form-group"><label>Login *</label><input type="text" id="c-login" class="form-control" required value="${u ? Utils.esc(u.login) : ''}" ${isEdit ? 'readonly' : ''}></div><div class="form-group"><label>Rôle *</label><select id="c-role" class="form-control" required>${roles.map(r => `<option value="${Utils.esc(r.code)}" ${u && u.role===r.code?'selected':''}>${Utils.esc(r.libelle)}</option>`).join('')}</select></div><div class="form-group full-width"><label>Agent lié</label><select id="c-agent" class="form-control select-scroll" size="6"><option value="">— Aucun —</option>${agents.map(a => `<option value="${a.idAgent}" ${u && u.idAgent === a.idAgent ? 'selected' : ''}>${Utils.esc(a.prenom + ' ' + a.nom)} — ${Utils.esc(a.matricule)}</option>`).join('')}</select></div>${!isEdit ? `<div class="form-group"><label>Mot de passe *</label><input type="password" id="c-password" class="form-control" required></div><div class="form-group"><label>Confirmer *</label><input type="password" id="c-password2" class="form-control" required></div>` : ''}<div class="form-group"><label>Statut</label><select id="c-actif" class="form-control"><option value="true" ${!u || u.actif !== false ? 'selected' : ''}>Actif</option><option value="false" ${u && u.actif === false ? 'selected' : ''}>Inactif</option></select></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn" onclick="Actions.saveCompte()">Enregistrer</button></div></div></div>`);
+    App.openModal(`<div class="modal-overlay active"><div class="modal" style="max-width:640px"><div class="modal-header"><h3>${isEdit ? 'Modifier' : 'Nouveau compte'}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div><div class="modal-body"><form id="form-compte"><input type="hidden" id="c-id" value="${isEdit ? u.idUtilisateur : ''}"><div class="form-grid"><div class="form-group"><label>Login *</label><input type="text" id="c-login" class="form-control" required value="${u ? Utils.esc(u.login) : ''}" ${isEdit ? 'readonly' : ''}></div><div class="form-group"><label>Rôle *</label><select id="c-role" class="form-control" required>${roles.map(r => `<option value="${Utils.esc(r.code)}" ${u && u.role===r.code?'selected':''}>${Utils.esc(r.libelle)}</option>`).join('')}</select></div><div class="form-group full-width"><label>Agent lié</label><select id="c-agent" class="form-control select-scroll" size="6"><option value="">— Aucun —</option>${agents.map(a => `<option value="${a.idAgent}" ${u && u.idAgent === a.idAgent ? 'selected' : ''}>${Utils.esc(a.prenom + ' ' + a.nom)} — ${Utils.esc(a.matricule)}</option>`).join('')}</select></div>${!isEdit ? `<div class="form-group"><label>Mot de passe (12 caractères minimum) *</label><input type="password" id="c-password" class="form-control" minlength="12" autocomplete="new-password" required></div><div class="form-group"><label>Confirmer *</label><input type="password" id="c-password2" class="form-control" minlength="12" autocomplete="new-password" required></div>` : ''}<div class="form-group"><label>Statut</label><select id="c-actif" class="form-control"><option value="true" ${!u || u.actif !== false ? 'selected' : ''}>Actif</option><option value="false" ${u && u.actif === false ? 'selected' : ''}>Inactif</option></select></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn" onclick="Actions.saveCompte()">Enregistrer</button></div></div></div>`);
   },
   saveCompte() {
     const f = document.getElementById('form-compte');
@@ -1379,7 +1388,7 @@ const Actions = {
     } catch (e) { Utils.toast(e.message, 'error'); }
   },
   openChangePassword(id) { const u = API.getUsers().find(x => x.idUtilisateur === id); if (!u) return; App.openModal(`<div class="modal-overlay active"><div class="modal" style="max-width:480px"><div class="modal-header"><h3>🔑 ${Utils.esc(u.login)}</h3><button class="modal-close" onclick="App.closeModal()">×</button></div><div class="modal-body"><form id="form-password"><input type="hidden" id="pw-id" value="${u.idUtilisateur}"><div class="form-group"><label>Nouveau *</label><input type="password" id="pw-new" class="form-control" required></div><div class="form-group"><label>Confirmer *</label><input type="password" id="pw-new2" class="form-control" required></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="App.closeModal()">Annuler</button><button class="btn btn-warning" onclick="Actions.savePassword()">Mettre à jour</button></div></div></div>`); },
-  savePassword() { const p1 = document.getElementById('pw-new').value; const p2 = document.getElementById('pw-new2').value; if (p1 !== p2) { Utils.toast('Différents', 'error'); return; } API.updateUser(Number(document.getElementById('pw-id').value), {password: p1}); Utils.toast('Mis à jour', 'success'); App.closeModal(); App.refresh(); },
+  savePassword() { const p1 = document.getElementById('pw-new').value; const p2 = document.getElementById('pw-new2').value; if (p1.length < 12) { Utils.toast('12 caractères minimum', 'error'); return; } if (p1 !== p2) { Utils.toast('Différents', 'error'); return; } API.updateUser(Number(document.getElementById('pw-id').value), {password: p1}); Utils.toast('Mis à jour', 'success'); App.closeModal(); App.refresh(); },
   supprimerCompte(id) { const u = API.getUsers().find(x => x.idUtilisateur === id); if (!u || u.login === 'admin') { Utils.toast('Protégé', 'error'); return; } if (!Utils.confirm(`Supprimer ${u.login} ?`)) return; API.deleteUser(id); Utils.toast('Supprimé', 'success'); App.refresh(); },
 
   roleBadge(roleCode) { const r = API.getRoleByCode(roleCode); if (!r) return `<span class="badge">${Utils.esc(roleCode)}</span>`; return `<span class="badge" style="background:${Utils.esc(r.couleur || '#6c757d')};color:#fff">${Utils.esc(r.libelle)}</span>`; },
@@ -1460,7 +1469,8 @@ function afterRoles() { Actions.renderRoles(); }
    ===================================================== */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    await API.init();
+    const session = await Auth.restore();
+    if (session) await API.init();
     App.mount();
   } catch (e) {
     console.error('Erreur :', e);
